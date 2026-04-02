@@ -161,6 +161,10 @@ extern "C"
         int GL_EXT_texture_rg;
         int GL_EXT_texture_query_lod;
         int GL_EXT_draw_elements_base_vertex;
+        // VinzzRenderer caps (renamed to avoid macro conflicts)
+        int has_astc_ldr;
+        int has_anisotropic_filtering;
+        int has_qcom_tiled_rendering;
     };
 
     extern struct gles_caps_t g_gles_caps;
