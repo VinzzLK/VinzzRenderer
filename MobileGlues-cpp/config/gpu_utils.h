@@ -34,4 +34,11 @@ extern "C"
 }
 #endif
 
+
+// VinzzRenderer additions
+int isAdreno650(const char* gpu);
+int isAdreno6xx(const char* gpu);
+int checkASTCSupport();
+int getOptimalMultidrawForAdreno650();
+
 #endif // MOBILEGLUES_PLUGIN_GPU_UTILS_H
