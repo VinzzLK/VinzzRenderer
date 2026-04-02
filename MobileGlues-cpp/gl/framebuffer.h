@@ -38,7 +38,6 @@ extern "C"
     GLAPI GLAPIENTRY void glDrawBuffer(GLenum buf);
     GLAPI GLAPIENTRY void glDrawBuffers(GLsizei n, const GLenum* bufs);
     GLAPI GLAPIENTRY void glReadBuffer(GLenum src);
-    GLAPI GLAPIENTRY void glClear(GLbitfield mask);
     GLAPI GLAPIENTRY GLenum glCheckFramebufferStatus(GLenum target);
 
 #ifdef __cplusplus

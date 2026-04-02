@@ -175,8 +175,8 @@ void glReadBuffer(GLenum src) {
         GLES.glReadBuffer(src);
     }
 }
-// VinzzRenderer: Optimized clear using scissor test (reduces fill rate on Adreno 650)
-void glClear(GLbitfield mask) {
+// VinzzRenderer: Optimized clear - called internally
+static void vinzz_smart_clear(GLbitfield mask) {
     extern int g_is_adreno_650;
     if (g_is_adreno_650) {
         // Only clear depth+stencil if actually needed
