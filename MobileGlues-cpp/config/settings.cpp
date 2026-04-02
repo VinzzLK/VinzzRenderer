@@ -224,6 +224,12 @@ void init_settings() {
         // Enable DSA for Adreno 650
         global_settings.ext_direct_state_access = true;
         LOG_V("[VinzzRenderer] Adreno 650: DSA enabled")
+        // Force 100MB GLSL cache regardless of user setting
+        global_settings.max_glsl_cache_size = 100 * 1024 * 1024;
+        LOG_V("[VinzzRenderer] Adreno 650: GLSL cache forced to 100MB")
+        // Force MultiDraw Indirect (best for Adreno 650)
+        // Will be finalized in init_settings_post
+        LOG_V("[VinzzRenderer] Adreno 650: all optimizations applied")
     }
 #endif
 

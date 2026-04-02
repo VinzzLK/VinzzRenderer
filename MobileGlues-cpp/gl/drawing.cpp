@@ -108,6 +108,9 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
+    // VinzzRenderer: Strip quads to triangles hint for Adreno 650 driver
+    // Adreno handles GL_TRIANGLES natively, quads need emulation
+    if (mode == 0x0007) mode = GL_TRIANGLES; // GL_QUADS → GL_TRIANGLES fallback
     LOG()
     LOG_D("glDrawElements, mode: %d, count: %d, type: %d, indices: %p", mode, count, type, indices)
     prepareForDraw();
