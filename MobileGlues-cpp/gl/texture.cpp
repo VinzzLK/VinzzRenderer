@@ -1171,7 +1171,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
     extern int g_is_adreno_650;
     if (g_is_adreno_650 && pname == GL_TEXTURE_MIN_FILTER &&
         (param == GL_LINEAR_MIPMAP_LINEAR || param == GL_LINEAR_MIPMAP_NEAREST)) {
-        if (g_gles_caps.GL_EXT_texture_filter_anisotropic) {
+        if (g_gles_caps.has_anisotropic_filtering) {
             GLES.glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
         }
     }

@@ -729,6 +729,28 @@ std::string preprocess_glsl(const std::string& glsl, GLenum shaderType, bool* at
     // MobileGlues macros injection
     inject_mg_macro_definition(ret);
 
+    // VinzzRenderer: Iris/Optifine GLSL compatibility fixes for GLES 3.2
+    // Fix 1: gl_FragDepth compatibility
+    replace_all(ret, "gl_FragDepthEXT", "gl_FragDepth");
+    // Fix 2: Iris shadow sampler fixes
+    replace_all(ret, "sampler2DShadow", "sampler2D");
+    // Fix 3: Iris-specific uniform block fixes
+    replace_all(ret, "layout(std140)", "layout(std140, binding=0)");
+    // Fix 4: Remove unsupported GL_ARB extensions that Iris injects
+    replace_all(ret, "#extension GL_ARB_gpu_shader5 : enable", "");
+    replace_all(ret, "#extension GL_ARB_gpu_shader5 : require", "");
+    replace_all(ret, "#extension GL_ARB_shading_language_packing : enable", "");
+    replace_all(ret, "#extension GL_ARB_texture_query_lod : enable", "");
+    // Fix 5: Iris uses textureLod in fragment shaders - needs explicit extension
+    if (ret.find("textureLod") != std::string::npos) {
+        size_t insertPos = find_insertion_point(ret);
+        ret.insert(insertPos, "#extension GL_EXT_shader_texture_lod : enable
+");
+    }
+    // Fix 6: Iris shadow2D compatibility
+    replace_all(ret, "shadow2D(", "texture(");
+    replace_all(ret, "shadow2DProj(", "textureProj(");
+
     if (hardware->emulate_texture_buffer) {
         // Sampler buffer processing
         process_sampler_buffer(ret);

@@ -98,6 +98,17 @@ void prepareForDraw() {
     }
 }
 
+// VinzzRenderer Opt #8: Primitive restart for strip rendering
+// Enables GPU to batch triangle strips, reduces vertex fetch overhead on Adreno 650
+static bool g_primitive_restart_enabled = false;
+void vinzz_ensure_primitive_restart() {
+    extern int g_is_adreno_650;
+    if (g_is_adreno_650 && !g_primitive_restart_enabled) {
+        GLES.glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+        g_primitive_restart_enabled = true;
+    }
+}
+
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void* indices, GLsizei primcount) {
     LOG()
     LOG_D("glDrawElementsInstanced, mode: %d, count: %d, type: %d, indices: %p, primcount: %d", mode, count, type,
