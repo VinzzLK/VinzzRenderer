@@ -744,8 +744,7 @@ std::string preprocess_glsl(const std::string& glsl, GLenum shaderType, bool* at
     // Fix 5: Iris uses textureLod in fragment shaders - needs explicit extension
     if (ret.find("textureLod") != std::string::npos) {
         size_t insertPos = find_insertion_point(ret);
-        ret.insert(insertPos, "#extension GL_EXT_shader_texture_lod : enable
-");
+        ret.insert(insertPos, "#extension GL_EXT_shader_texture_lod : enable\n");
     }
     // Fix 6: Iris shadow2D compatibility
     replace_all(ret, "shadow2D(", "texture(");
