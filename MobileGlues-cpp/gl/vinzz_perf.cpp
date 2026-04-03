@@ -174,8 +174,8 @@ void vinzz_perf_init() {
     if (global_settings.vinzz_fast_hints) {
         vinzz_adreno650_init();
     }
-    __android_log_print(ANDROID_LOG_VERBOSE, "VinzzRenderer", "50 optimizations initialized!")
-    __android_log_print(ANDROID_LOG_VERBOSE, "VinzzRenderer", "Adreno 650 Snapdragon 870 - Max FPS mode")
+    /* VinzzRenderer: 50 optimizations initialized! */
+    /* VinzzRenderer: Adreno 650 Snapdragon 870 - Max FPS mode */
 }
 
 void vinzz_perf_frame_begin() {
@@ -186,6 +186,6 @@ void vinzz_perf_frame_begin() {
 void vinzz_perf_frame_end() {
     static int frame = 0;
     if (++frame % 600 == 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "VinzzRenderer", "Draw calls/frame: %d", g_draw_call_frame_count)
+        /* VinzzRenderer: Draw calls/frame: %d */
     }
 }
