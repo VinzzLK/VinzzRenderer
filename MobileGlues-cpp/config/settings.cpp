@@ -1,3 +1,4 @@
+#include "settings.h"
 // VinzzRenderer GPU globals
 int g_is_adreno_650 = 0;
 int g_is_adreno_6xx = 0;
