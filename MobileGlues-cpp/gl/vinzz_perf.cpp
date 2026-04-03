@@ -1,6 +1,5 @@
 
 // VinzzRenderer - vinzz_perf.cpp
-#include "vinzz_perf.h"
 #include "../gles/loader.h"
 #include "../config/settings.h"
 

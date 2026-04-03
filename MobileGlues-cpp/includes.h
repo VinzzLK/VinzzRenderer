@@ -49,4 +49,3 @@ using UnorderedMap = FastSTL::unordered_map<Key, T, Hash, KeyEqual, Allocator>;
 #endif // MOBILEGLUES_INCLUDES_H
 
 // VinzzRenderer performance system
-#include "gl/vinzz_perf.h"
