@@ -21,6 +21,7 @@
 #include "../gles/loader.h"
 #include "framebuffer.h"
 #include "log.h"
+#include "../config/settings.h"
 #include "mg.h"
 #include <GL/gl.h>
 #include <ankerl/unordered_dense.h>
