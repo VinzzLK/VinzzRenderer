@@ -205,6 +205,56 @@ struct global_settings_t {
     bool vinzz_qcom_tiling;        // QCOM tiled rendering proper
     bool vinzz_fence_pool;         // Fence sync pooling
     bool vinzz_disjoint_timer_off; // Disable disjoint timer (saves overhead)
+
+    // ===== VinzzRenderer BATCH 2: 40 Advanced Adreno 650 Optimizations =====
+    // GPU Pipeline
+    bool vinzz_gpu_pipeline_flush;     // Explicit pipeline flush hints
+    bool vinzz_early_fragment_test;    // Force early fragment test layout
+    bool vinzz_primitive_restart;      // Enable primitive restart index
+    bool vinzz_geometry_cache;         // Cache geometry per program
+    bool vinzz_instanced_arrays;       // Prefer instanced arrays
+    // Memory & Buffer
+    bool vinzz_ubo_cache;             // Cache UBO bindings
+    bool vinzz_ssbo_prefer;           // Prefer SSBO over UBO when possible
+    bool vinzz_buffer_storage;        // Use immutable buffer storage
+    bool vinzz_coherent_map;          // Use coherent buffer mapping
+    bool vinzz_client_wait_zero;      // glClientWaitSync with timeout=0
+    // Texture Advanced
+    bool vinzz_sparse_texture;        // Sparse texture allocation
+    bool vinzz_texture_swizzle;       // Texture swizzle optimization
+    bool vinzz_compressed_upload;     // Prefer compressed tex upload
+    bool vinzz_tex_storage;           // Use glTexStorage instead of glTexImage
+    bool vinzz_max_texture_size_cap;  // Cap texture size to 2048 max
+    // Shader Advanced
+    bool vinzz_binary_shader_cache;   // Cache compiled shader binaries
+    bool vinzz_program_pipeline;      // Use separate shader programs
+    bool vinzz_uniform_cache;         // Cache uniform locations
+    bool vinzz_skip_uniform_noop;     // Skip uniform upload if value unchanged
+    bool vinzz_link_cache;            // Cache program link results
+    // Rendering Quality/Speed
+    bool vinzz_scissor_cull;          // Scissor-based draw culling
+    bool vinzz_depth_clamp;           // Enable depth clamp
+    bool vinzz_polygon_offset_fix;    // Polygon offset for shadow fix
+    bool vinzz_blend_equation_cache;  // Cache blend equation state
+    bool vinzz_stencil_mask_cache;    // Cache stencil mask state
+    // VSync & Frame Timing
+    bool vinzz_accurate_vsync;        // Accurate VSync via EGL swap timing
+    bool vinzz_frame_pacing;          // Android frame pacing (Swappy)
+    bool vinzz_triple_buffer;         // Triple buffering hint
+    int  vinzz_swap_interval;         // EGL swap interval (0=uncapped,1=vsync)
+    bool vinzz_fps_cap_enable;        // Enable software FPS cap
+    int  vinzz_fps_cap_value;         // Target FPS cap value
+    // Adreno 650 Specific
+    bool vinzz_adreno_gmem_save;      // GMEM save/restore optimization
+    bool vinzz_adreno_ubwc;           // UBWC compression hint
+    bool vinzz_adreno_perfcounter;    // Disable perf counters overhead
+    bool vinzz_adreno_lrz;           // LRZ (Low Resolution Z) hint
+    bool vinzz_adreno_binning;        // Binning pass optimization
+    // Sodium Specific
+    bool vinzz_sodium_chunk_cache;    // Sodium chunk geometry cache
+    bool vinzz_sodium_translucent;    // Sodium translucent layer fast
+    bool vinzz_sodium_region_cull;    // Sodium region culling assist
+    bool vinzz_iris_compat_strict;    // Strict Iris shader compatibility
 };
 
 extern global_settings_t global_settings;

@@ -14,6 +14,27 @@
 
 #define DEBUG 0
 
+// VinzzRenderer: Uniform value cache to skip redundant uploads
+#include <unordered_map>
+struct UniformVal { float f[16]; int count; };
+static std::unordered_map<uint64_t, UniformVal> g_uniform_cache;
+
+inline uint64_t uniform_key(GLuint prog, GLint loc) {
+    return ((uint64_t)prog << 32) | (uint32_t)loc;
+}
+
+inline bool uniform_changed(GLuint prog, GLint loc, const float* v, int n) {
+    if (!global_settings.vinzz_skip_uniform_noop) return true;
+    auto key = uniform_key(prog, loc);
+    auto it = g_uniform_cache.find(key);
+    if (it != g_uniform_cache.end() && it->second.count == n &&
+        memcmp(it->second.f, v, n * sizeof(float)) == 0) return false;
+    auto& entry = g_uniform_cache[key];
+    memcpy(entry.f, v, n * sizeof(float));
+    entry.count = n;
+    return true;
+}
+
 // VinzzRenderer: Apply GL_FASTEST hints for Adreno 650
 void vinzz_apply_fast_hints() {
     if (!global_settings.vinzz_fast_hints) return;

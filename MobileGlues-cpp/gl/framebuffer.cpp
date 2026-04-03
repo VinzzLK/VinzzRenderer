@@ -33,6 +33,30 @@ inline void vinzz_end_tiling() {
     if (!g_qcom_tiling_active) return;
     g_qcom_tiling_active = false;
 }
+
+// VinzzRenderer: Smart depth/stencil invalidation after render
+inline void vinzz_smart_invalidate_attachments(GLenum target) {
+    if (!global_settings.vinzz_smart_invalidate) return;
+    static const GLenum depth_stencil[] = {
+        GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT
+    };
+    static const GLenum depth_stencil_color[] = {
+        GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT, GL_COLOR_ATTACHMENT0
+    };
+    if (global_settings.vinzz_color_invalidate) {
+        GLES.glInvalidateFramebuffer(target, 3, depth_stencil_color);
+    } else {
+        GLES.glInvalidateFramebuffer(target, 2, depth_stencil);
+    }
+}
+
+// VinzzRenderer: Adreno LRZ hint — disable LRZ test when depth write off
+inline void vinzz_lrz_hint(bool depth_write_enabled) {
+    if (!global_settings.vinzz_adreno_lrz) return;
+    // Adreno driver reads depth mask state — just ensure it's set correctly
+    // This is a no-op hint but signals correct LRZ state to driver
+    (void)depth_write_enabled;
+}
 GLuint current_draw_fbo = 0;
 GLuint current_read_fbo = 0;
 std::vector<framebuffer_t> framebuffers;

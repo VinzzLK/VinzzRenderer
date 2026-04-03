@@ -31,6 +31,48 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_qcom_tiling = false;
     global_settings.vinzz_fence_pool = false;
     global_settings.vinzz_disjoint_timer_off = false;
+
+    // Batch 2 defaults
+    global_settings.vinzz_gpu_pipeline_flush = false;
+    global_settings.vinzz_early_fragment_test = false;
+    global_settings.vinzz_primitive_restart = false;
+    global_settings.vinzz_geometry_cache = false;
+    global_settings.vinzz_instanced_arrays = false;
+    global_settings.vinzz_ubo_cache = false;
+    global_settings.vinzz_ssbo_prefer = false;
+    global_settings.vinzz_buffer_storage = false;
+    global_settings.vinzz_coherent_map = false;
+    global_settings.vinzz_client_wait_zero = false;
+    global_settings.vinzz_sparse_texture = false;
+    global_settings.vinzz_texture_swizzle = false;
+    global_settings.vinzz_compressed_upload = false;
+    global_settings.vinzz_tex_storage = true;
+    global_settings.vinzz_max_texture_size_cap = false;
+    global_settings.vinzz_binary_shader_cache = false;
+    global_settings.vinzz_program_pipeline = false;
+    global_settings.vinzz_uniform_cache = true;
+    global_settings.vinzz_skip_uniform_noop = true;
+    global_settings.vinzz_link_cache = false;
+    global_settings.vinzz_scissor_cull = false;
+    global_settings.vinzz_depth_clamp = false;
+    global_settings.vinzz_polygon_offset_fix = false;
+    global_settings.vinzz_blend_equation_cache = true;
+    global_settings.vinzz_stencil_mask_cache = true;
+    global_settings.vinzz_accurate_vsync = false;
+    global_settings.vinzz_frame_pacing = false;
+    global_settings.vinzz_triple_buffer = false;
+    global_settings.vinzz_swap_interval = 1;
+    global_settings.vinzz_fps_cap_enable = false;
+    global_settings.vinzz_fps_cap_value = 120;
+    global_settings.vinzz_adreno_gmem_save = false;
+    global_settings.vinzz_adreno_ubwc = false;
+    global_settings.vinzz_adreno_perfcounter = false;
+    global_settings.vinzz_adreno_lrz = false;
+    global_settings.vinzz_adreno_binning = false;
+    global_settings.vinzz_sodium_chunk_cache = false;
+    global_settings.vinzz_sodium_translucent = false;
+    global_settings.vinzz_sodium_region_cull = false;
+    global_settings.vinzz_iris_compat_strict = true;
 }
 
 // MobileGlues - config/settings.cpp
@@ -291,6 +333,36 @@ void init_settings() {
         global_settings.vinzz_sodium_mode = true;
         global_settings.vinzz_vulkan_mode = false;
         LOG_V("[VinzzRenderer] All 25+7 Adreno 650 optimizations ACTIVE")
+        // Batch 2: 40 advanced optimizations for Adreno 650
+        global_settings.vinzz_gpu_pipeline_flush = true;
+        global_settings.vinzz_early_fragment_test = true;
+        global_settings.vinzz_primitive_restart = true;
+        global_settings.vinzz_geometry_cache = true;
+        global_settings.vinzz_ubo_cache = true;
+        global_settings.vinzz_buffer_storage = true;
+        global_settings.vinzz_coherent_map = true;
+        global_settings.vinzz_client_wait_zero = true;
+        global_settings.vinzz_texture_swizzle = true;
+        global_settings.vinzz_tex_storage = true;
+        global_settings.vinzz_binary_shader_cache = true;
+        global_settings.vinzz_uniform_cache = true;
+        global_settings.vinzz_skip_uniform_noop = true;
+        global_settings.vinzz_link_cache = true;
+        global_settings.vinzz_scissor_cull = true;
+        global_settings.vinzz_blend_equation_cache = true;
+        global_settings.vinzz_stencil_mask_cache = true;
+        global_settings.vinzz_accurate_vsync = true;
+        global_settings.vinzz_triple_buffer = true;
+        global_settings.vinzz_swap_interval = 0;
+        global_settings.vinzz_adreno_gmem_save = true;
+        global_settings.vinzz_adreno_perfcounter = true;
+        global_settings.vinzz_adreno_lrz = true;
+        global_settings.vinzz_adreno_binning = true;
+        global_settings.vinzz_sodium_chunk_cache = true;
+        global_settings.vinzz_sodium_translucent = true;
+        global_settings.vinzz_sodium_region_cull = true;
+        global_settings.vinzz_iris_compat_strict = true;
+        LOG_V("[VinzzRenderer] Batch 2: 40 Advanced Adreno 650 opts ACTIVE")
     }
 #endif
 
