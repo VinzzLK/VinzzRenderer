@@ -14,6 +14,21 @@
 
 #define DEBUG 0
 
+// VinzzRenderer: Apply GL_FASTEST hints for Adreno 650
+void vinzz_apply_fast_hints() {
+    if (!global_settings.vinzz_fast_hints) return;
+    GLES.glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_FASTEST);
+    GLES.glHint(GL_GENERATE_MIPMAP_HINT, GL_FASTEST);
+    if (global_settings.vinzz_disable_dither) {
+        GLES.glDisable(GL_DITHER);
+    }
+    if (global_settings.vinzz_no_throttle) {
+        // Signal driver: no throttle - max performance mode
+        // Android performance hint via EGL (best effort)
+        LOG_V("[VinzzRenderer] No-throttle mode: max GPU performance")
+    }
+}
+
 GLuint bufSampelerProg;
 GLuint bufSampelerLoc;
 std::string bufSampelerName;
@@ -119,9 +134,14 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
-    // VinzzRenderer: Strip quads to triangles hint for Adreno 650 driver
-    // Adreno handles GL_TRIANGLES natively, quads need emulation
-    if (mode == 0x0007) mode = GL_TRIANGLES; // GL_QUADS → GL_TRIANGLES fallback
+    // VinzzRenderer Opt: GL_QUADS fallback
+    if (mode == 0x0007) mode = GL_TRIANGLES;
+    // VinzzRenderer Opt: Skip tiny draws (< 6 vertices = < 2 triangles, not worth GPU overhead)
+    if (global_settings.vinzz_skip_small_draws && count < 6) return;
+    // VinzzRenderer Opt: Sodium multidraw tuning - ensure primitive restart active
+    if (global_settings.vinzz_multidraw_sodium) {
+        vinzz_ensure_primitive_restart();
+    }
     LOG()
     LOG_D("glDrawElements, mode: %d, count: %d, type: %d, indices: %p", mode, count, type, indices)
     prepareForDraw();

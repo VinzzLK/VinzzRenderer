@@ -170,6 +170,41 @@ struct global_settings_t {
     Version custom_gl_version;
     FSR1_Quality_Preset fsr1_setting;
     HideMGEnvLevel hide_mg_env_level;
+
+    // VinzzRenderer 25 Optimizations Settings
+    // Rendering mode
+    bool vinzz_sodium_mode;        // Sodium-optimized mode
+    bool vinzz_vulkan_mode;        // Vulkan-optimized mode
+    // Performance
+    bool vinzz_no_throttle;        // Disable thermal throttle hints
+    bool vinzz_fast_hints;         // GL_FASTEST for all hints
+    bool vinzz_disable_dither;     // Disable dithering
+    bool vinzz_mediump_fragment;   // Use mediump in fragment shaders
+    bool vinzz_early_z;            // Early fragment test hint
+    bool vinzz_skip_small_draws;   // Skip draws < 6 vertices
+    bool vinzz_state_cache;        // Cache GL state to skip redundant calls
+    bool vinzz_batch_uniforms;     // Batch uniform uploads
+    // Texture
+    int vinzz_anisotropic_level;   // 1,2,4,8,16x anisotropic
+    float vinzz_mip_bias;          // Mipmap LOD bias (-1.0 to 1.0)
+    bool vinzz_astc_prefer;        // Prefer ASTC compression
+    bool vinzz_tex_cache;          // Texture bind cache
+    // Framebuffer
+    bool vinzz_smart_invalidate;   // Smart depth/stencil invalidation
+    bool vinzz_color_invalidate;   // Also invalidate color when safe
+    bool vinzz_fbo_cache;          // Cache framebuffer status checks
+    // Shader
+    bool vinzz_glsl_pragma_opt;    // Inject #pragma optimize(on)
+    bool vinzz_reduce_precision;   // Reduce non-critical precision
+    bool vinzz_shader_cache_aggressive; // More aggressive shader caching
+    // Draw/Buffer
+    bool vinzz_persistent_vbo;     // Persistent VBO mapping
+    bool vinzz_index_reuse;        // Index buffer reuse detection
+    bool vinzz_multidraw_sodium;   // Sodium-specific multidraw tuning
+    // Advanced
+    bool vinzz_qcom_tiling;        // QCOM tiled rendering proper
+    bool vinzz_fence_pool;         // Fence sync pooling
+    bool vinzz_disjoint_timer_off; // Disable disjoint timer (saves overhead)
 };
 
 extern global_settings_t global_settings;

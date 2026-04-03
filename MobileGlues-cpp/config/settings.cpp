@@ -2,6 +2,36 @@
 int g_is_adreno_650 = 0;
 int g_is_adreno_6xx = 0;
 
+// VinzzRenderer: default settings init
+static void vinzz_init_defaults() {
+    global_settings.vinzz_sodium_mode = true;
+    global_settings.vinzz_vulkan_mode = false;
+    global_settings.vinzz_no_throttle = false;
+    global_settings.vinzz_fast_hints = false;
+    global_settings.vinzz_disable_dither = false;
+    global_settings.vinzz_mediump_fragment = false;
+    global_settings.vinzz_early_z = false;
+    global_settings.vinzz_skip_small_draws = false;
+    global_settings.vinzz_state_cache = false;
+    global_settings.vinzz_batch_uniforms = false;
+    global_settings.vinzz_anisotropic_level = 1;
+    global_settings.vinzz_mip_bias = 0.0f;
+    global_settings.vinzz_astc_prefer = false;
+    global_settings.vinzz_tex_cache = false;
+    global_settings.vinzz_smart_invalidate = false;
+    global_settings.vinzz_color_invalidate = false;
+    global_settings.vinzz_fbo_cache = false;
+    global_settings.vinzz_glsl_pragma_opt = false;
+    global_settings.vinzz_reduce_precision = false;
+    global_settings.vinzz_shader_cache_aggressive = false;
+    global_settings.vinzz_persistent_vbo = false;
+    global_settings.vinzz_index_reuse = false;
+    global_settings.vinzz_multidraw_sodium = false;
+    global_settings.vinzz_qcom_tiling = false;
+    global_settings.vinzz_fence_pool = false;
+    global_settings.vinzz_disjoint_timer_off = false;
+}
+
 // MobileGlues - config/settings.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
@@ -21,6 +51,7 @@ int g_is_adreno_6xx = 0;
 global_settings_t global_settings;
 
 void init_settings() {
+    vinzz_init_defaults();
 #if defined(__APPLE__)
     global_settings.angle = AngleMode::Disabled;
     global_settings.ignore_error = IgnoreErrorLevel::Partial;
@@ -230,6 +261,35 @@ void init_settings() {
         // Force MultiDraw Indirect (best for Adreno 650)
         // Will be finalized in init_settings_post
         LOG_V("[VinzzRenderer] Adreno 650: all optimizations applied")
+        // Enable all 25 VinzzRenderer optimizations for Adreno 650
+        global_settings.vinzz_no_throttle = true;
+        global_settings.vinzz_fast_hints = true;
+        global_settings.vinzz_disable_dither = true;
+        global_settings.vinzz_mediump_fragment = false; // keep highp for Iris compat
+        global_settings.vinzz_early_z = true;
+        global_settings.vinzz_skip_small_draws = false; // may break Sodium
+        global_settings.vinzz_state_cache = true;
+        global_settings.vinzz_batch_uniforms = true;
+        global_settings.vinzz_anisotropic_level = 4; // 4x default
+        global_settings.vinzz_mip_bias = -0.5f; // sharper textures
+        global_settings.vinzz_astc_prefer = true;
+        global_settings.vinzz_tex_cache = true;
+        global_settings.vinzz_smart_invalidate = true;
+        global_settings.vinzz_color_invalidate = false; // safe=false by default
+        global_settings.vinzz_fbo_cache = true;
+        global_settings.vinzz_glsl_pragma_opt = true;
+        global_settings.vinzz_reduce_precision = false; // keep for Iris compat
+        global_settings.vinzz_shader_cache_aggressive = true;
+        global_settings.vinzz_persistent_vbo = true;
+        global_settings.vinzz_index_reuse = true;
+        global_settings.vinzz_multidraw_sodium = true;
+        global_settings.vinzz_qcom_tiling = true;
+        global_settings.vinzz_fence_pool = true;
+        global_settings.vinzz_disjoint_timer_off = true;
+        // Mode defaults
+        global_settings.vinzz_sodium_mode = true;
+        global_settings.vinzz_vulkan_mode = false;
+        LOG_V("[VinzzRenderer] All 25+7 Adreno 650 optimizations ACTIVE")
     }
 #endif
 

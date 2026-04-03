@@ -14,6 +14,25 @@
 
 static GLint MAX_COLOR_ATTACHMENTS = 0;
 static GLint MAX_DRAW_BUFFERS = 0;
+
+// VinzzRenderer: FBO status cache to avoid redundant checks
+static GLenum g_cached_fbo_status = 0;
+static GLuint g_cached_fbo_id = 0xFFFFFFFF;
+
+// VinzzRenderer: QCOM tiled rendering state
+static bool g_qcom_tiling_active = false;
+
+inline void vinzz_begin_tiling(GLuint fbo) {
+    if (!global_settings.vinzz_qcom_tiling) return;
+    if (!g_gles_caps.has_qcom_tiled_rendering) return;
+    g_qcom_tiling_active = true;
+    LOG_V("[VinzzRenderer] QCOM tiling begin fbo=%u", fbo)
+}
+
+inline void vinzz_end_tiling() {
+    if (!g_qcom_tiling_active) return;
+    g_qcom_tiling_active = false;
+}
 GLuint current_draw_fbo = 0;
 GLuint current_read_fbo = 0;
 std::vector<framebuffer_t> framebuffers;
@@ -192,7 +211,18 @@ static void vinzz_smart_clear(GLbitfield mask) {
 }
 
 GLenum glCheckFramebufferStatus(GLenum target) {
+    // VinzzRenderer Opt: Cache FBO status
+    if (global_settings.vinzz_fbo_cache && target == GL_FRAMEBUFFER) {
+        GLuint cur = current_draw_fbo;
+        if (cur == g_cached_fbo_id && g_cached_fbo_status != 0) {
+            return g_cached_fbo_status;
+        }
+    }
     GLenum status = GLES.glCheckFramebufferStatus(target);
+    if (global_settings.vinzz_fbo_cache && target == GL_FRAMEBUFFER) {
+        g_cached_fbo_id = current_draw_fbo;
+        g_cached_fbo_status = status;
+    }
     if (global_settings.ignore_error == IgnoreErrorLevel::Full && status != GL_FRAMEBUFFER_COMPLETE) {
         return GL_FRAMEBUFFER_COMPLETE;
     }

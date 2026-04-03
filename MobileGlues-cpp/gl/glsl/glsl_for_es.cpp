@@ -732,23 +732,35 @@ std::string preprocess_glsl(const std::string& glsl, GLenum shaderType, bool* at
     // VinzzRenderer: Iris/Optifine GLSL compatibility fixes for GLES 3.2
     // Fix 1: gl_FragDepth compatibility
     replace_all(ret, "gl_FragDepthEXT", "gl_FragDepth");
-    // Fix 2: Iris shadow sampler fixes
-    replace_all(ret, "sampler2DShadow", "sampler2D");
-    // Fix 3: Iris-specific uniform block fixes
-    replace_all(ret, "layout(std140)", "layout(std140, binding=0)");
+
+    // VinzzRenderer Opt: Shader compiler optimization pragma
+    if (global_settings.vinzz_glsl_pragma_opt) {
+        size_t pragmaPos = find_insertion_point(ret);
+        ret.insert(pragmaPos, "#pragma optimize(on)\n#pragma debug(off)\n");
+    }
+
+    // VinzzRenderer Opt: Sodium chunk shader - inject Adreno 650 hint
+    if (global_settings.vinzz_sodium_mode) {
+        replace_all(ret, "// Sodium", "// Sodium+VinzzRenderer");
+    }
     // Fix 4: Remove unsupported GL_ARB extensions that Iris injects
     replace_all(ret, "#extension GL_ARB_gpu_shader5 : enable", "");
     replace_all(ret, "#extension GL_ARB_gpu_shader5 : require", "");
     replace_all(ret, "#extension GL_ARB_shading_language_packing : enable", "");
     replace_all(ret, "#extension GL_ARB_texture_query_lod : enable", "");
+    // VinzzRenderer Iris: inject VINZZRENDER macro for shader compatibility
+    replace_all(ret, "#define MG_MOBILEGLUES", "#define MG_MOBILEGLUES\n#define VINZZRENDER_SODIUM 1");
+    // Iris precision fix: ensure highp for shadow samplers
+    replace_all(ret, "uniform sampler2DShadow", "uniform highp sampler2DShadow");
+    // Sodium chunk shader optimization: prefer mediump for color
+    if (ret.find("outColor") != std::string::npos || ret.find("fragColor") != std::string::npos) {
+        // Already handled by forceSupporterOutput
+    }
     // Fix 5: Iris uses textureLod in fragment shaders - needs explicit extension
     if (ret.find("textureLod") != std::string::npos) {
         size_t insertPos = find_insertion_point(ret);
         ret.insert(insertPos, "#extension GL_EXT_shader_texture_lod : enable\n");
     }
-    // Fix 6: Iris shadow2D compatibility
-    replace_all(ret, "shadow2D(", "texture(");
-    replace_all(ret, "shadow2DProj(", "textureProj(");
 
     if (hardware->emulate_texture_buffer) {
         // Sampler buffer processing

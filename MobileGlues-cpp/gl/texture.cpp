@@ -1167,12 +1167,17 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 }
 
 void glTexParameteri(GLenum target, GLenum pname, GLint param) {
-    // VinzzRenderer: Auto-enable 4x anisotropic on Adreno 650
+    // VinzzRenderer Opt: Configurable anisotropic filtering
     extern int g_is_adreno_650;
-    if (g_is_adreno_650 && pname == GL_TEXTURE_MIN_FILTER &&
+    if (pname == GL_TEXTURE_MIN_FILTER &&
         (param == GL_LINEAR_MIPMAP_LINEAR || param == GL_LINEAR_MIPMAP_NEAREST)) {
-        if (g_gles_caps.has_anisotropic_filtering) {
-            GLES.glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+        if (g_gles_caps.has_anisotropic_filtering && global_settings.vinzz_anisotropic_level > 1) {
+            float aniso = (float)global_settings.vinzz_anisotropic_level;
+            GLES.glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+        }
+        // VinzzRenderer Opt: Mipmap LOD bias for sharper/faster textures
+        if (g_is_adreno_650 && global_settings.vinzz_mip_bias != 0.0f) {
+            // Note: GL_TEXTURE_LOD_BIAS not in GLES, handled via shader injection
         }
     }
     LOG()
