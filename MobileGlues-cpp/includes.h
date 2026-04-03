@@ -20,6 +20,7 @@
 
 #include "egl/egl.h"
 #include "egl/loader.h"
+#include "gl/vinzz_perf.h"
 
 #if PROFILING
 #include <perfetto.h>
