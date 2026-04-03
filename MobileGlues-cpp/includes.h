@@ -47,3 +47,6 @@ template <typename Key, typename T, class Hash = std::hash<Key>, class KeyEqual 
 using UnorderedMap = FastSTL::unordered_map<Key, T, Hash, KeyEqual, Allocator>;
 
 #endif // MOBILEGLUES_INCLUDES_H
+
+// VinzzRenderer performance system
+#include "gl/vinzz_perf.h"

@@ -313,8 +313,8 @@ void init_settings() {
         global_settings.vinzz_skip_small_draws = false; // may break Sodium
         global_settings.vinzz_state_cache = true;
         global_settings.vinzz_batch_uniforms = true;
-        global_settings.vinzz_anisotropic_level = 4; // 4x default
-        global_settings.vinzz_mip_bias = -0.5f; // sharper textures
+        global_settings.vinzz_anisotropic_level = 16; // 16x max for Adreno 650
+        global_settings.vinzz_mip_bias = -1.0f; // max sharpness for Adreno 650
         global_settings.vinzz_astc_prefer = true;
         global_settings.vinzz_tex_cache = true;
         global_settings.vinzz_smart_invalidate = true;

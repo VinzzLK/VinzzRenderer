@@ -185,7 +185,7 @@ struct global_settings_t {
     bool vinzz_state_cache;        // Cache GL state to skip redundant calls
     bool vinzz_batch_uniforms;     // Batch uniform uploads
     // Texture
-    int vinzz_anisotropic_level;   // 1,2,4,8,16x anisotropic
+    int vinzz_anisotropic_level;   // 1=off,2,4,8,16x anisotropic (Adreno 650 max=16)
     float vinzz_mip_bias;          // Mipmap LOD bias (-1.0 to 1.0)
     bool vinzz_astc_prefer;        // Prefer ASTC compression
     bool vinzz_tex_cache;          // Texture bind cache
