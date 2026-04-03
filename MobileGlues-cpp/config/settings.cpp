@@ -272,6 +272,38 @@ void init_settings() {
         break;
     }
 
+    // VinzzRenderer: Read user-configurable vinzz settings from config
+    if (success) {
+        global_settings.vinzz_no_throttle         = config_get_int("vinzz_no_throttle") > 0;
+        global_settings.vinzz_fast_hints          = config_get_int("vinzz_fast_hints") > 0;
+        global_settings.vinzz_disable_dither      = config_get_int("vinzz_disable_dither") > 0;
+        global_settings.vinzz_skip_small_draws    = config_get_int("vinzz_skip_small_draws") > 0;
+        global_settings.vinzz_state_cache         = config_get_int("vinzz_state_cache") > 0;
+        global_settings.vinzz_fbo_cache           = config_get_int("vinzz_fbo_cache") > 0;
+        global_settings.vinzz_smart_invalidate    = config_get_int("vinzz_smart_invalidate") > 0;
+        global_settings.vinzz_color_invalidate    = config_get_int("vinzz_color_invalidate") > 0;
+        global_settings.vinzz_qcom_tiling         = config_get_int("vinzz_qcom_tiling") > 0;
+        global_settings.vinzz_multidraw_sodium    = config_get_int("vinzz_multidraw_sodium") > 0;
+        global_settings.vinzz_shader_cache_aggressive = config_get_int("vinzz_shader_cache_aggressive") > 0;
+        global_settings.vinzz_fence_pool          = config_get_int("vinzz_fence_pool") > 0;
+        global_settings.vinzz_disjoint_timer_off  = config_get_int("vinzz_disjoint_timer_off") > 0;
+        global_settings.vinzz_sodium_mode         = config_get_int("vinzz_sodium_mode") > 0;
+        global_settings.vinzz_tex_cache           = config_get_int("vinzz_tex_cache") > 0;
+        global_settings.vinzz_persistent_vbo      = config_get_int("vinzz_persistent_vbo") > 0;
+        global_settings.vinzz_index_reuse         = config_get_int("vinzz_index_reuse") > 0;
+        global_settings.vinzz_batch_uniforms      = config_get_int("vinzz_batch_uniforms") > 0;
+        global_settings.vinzz_early_z             = config_get_int("vinzz_early_z") > 0;
+        global_settings.vinzz_glsl_pragma_opt     = config_get_int("vinzz_glsl_pragma_opt") > 0;
+        global_settings.vinzz_reduce_precision    = config_get_int("vinzz_reduce_precision") > 0;
+        global_settings.vinzz_mediump_fragment    = config_get_int("vinzz_mediump_fragment") > 0;
+        global_settings.vinzz_astc_prefer         = config_get_int("vinzz_astc_prefer") > 0;
+        int aniso = config_get_int("vinzz_anisotropic_level");
+        if (aniso >= 1 && aniso <= 16) global_settings.vinzz_anisotropic_level = aniso;
+        int mip_bias_int = config_get_int("vinzz_mip_bias_x10");
+        if (mip_bias_int >= -10 && mip_bias_int <= 10)
+            global_settings.vinzz_mip_bias = mip_bias_int / 10.0f;
+    }
+
     global_settings.ext_compute_shader = enableExtComputeShader;
     global_settings.ext_timer_query = enableExtTimerQuery;
     global_settings.ext_direct_state_access = enableExtDirectStateAccess;

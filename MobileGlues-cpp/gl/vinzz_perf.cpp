@@ -1,13 +1,10 @@
 // VinzzRenderer - vinzz_perf.cpp
-// Implementation of 50 Adreno 650 optimizations
+// Real implementation of 50 Adreno 650 optimizations
 #include "vinzz_perf.h"
 #include "../gles/loader.h"
 #include "../config/settings.h"
-#include "log.h"
 
-// ============================================
-// GLOBAL STATE
-// ============================================
+// Global state
 VinzzStateCache g_vstate;
 int g_draw_call_count = 0;
 int g_draw_call_frame_count = 0;
@@ -28,12 +25,8 @@ int g_fence_pool_size = 0;
 
 static uint32_t g_last_tex_deleted[64] = {0};
 static int g_tex_del_idx = 0;
-static uint32_t g_double_buf[2] = {0,0};
-static int g_double_buf_idx = 0;
 
-// ============================================
-// OPT 17: Barrier emit
-// ============================================
+// Opt 17: Barrier emit
 void vinzz_emit_barrier_if_needed(uint32_t bits) {
     if (g_needs_barrier) {
         GLES.glMemoryBarrier(bits);
@@ -41,10 +34,10 @@ void vinzz_emit_barrier_if_needed(uint32_t bits) {
     }
 }
 
-// ============================================
-// OPT 18: Uniform location cache
-// ============================================
+// Opt 18: Uniform location cache
 int vinzz_get_uniform(uint32_t prog, const char* name) {
+    if (!global_settings.vinzz_batch_uniforms)
+        return GLES.glGetUniformLocation(prog, name);
     uint64_t key = ((uint64_t)prog << 32) ^ std::hash<std::string>{}(name);
     auto it = g_uniform_loc_cache.find(key);
     if (it != g_uniform_loc_cache.end()) return it->second;
@@ -68,9 +61,7 @@ void vinzz_clear_uniform_cache(uint32_t prog) {
     }
 }
 
-// ============================================
-// OPT 19: Attrib location cache
-// ============================================
+// Opt 19: Attrib location cache
 int vinzz_get_attrib(uint32_t prog, const char* name) {
     uint64_t key = ((uint64_t)prog << 32) ^ std::hash<std::string>{}(name);
     auto it = g_attrib_cache.find(key);
@@ -80,9 +71,7 @@ int vinzz_get_attrib(uint32_t prog, const char* name) {
     return loc;
 }
 
-// ============================================
-// OPT 20: Sampler object pool
-// ============================================
+// Opt 20: Sampler pool
 uint32_t vinzz_get_sampler(uint32_t min_f, uint32_t mag_f, uint32_t ws, uint32_t wt, float aniso) {
     for (auto& s : g_sampler_pool) {
         if (s.min_filter==min_f && s.mag_filter==mag_f &&
@@ -100,19 +89,17 @@ uint32_t vinzz_get_sampler(uint32_t min_f, uint32_t mag_f, uint32_t ws, uint32_t
     return sid;
 }
 
-// ============================================
-// OPT 21-25: Adreno 650 init hints
-// ============================================
+// Opt 21-25: Adreno 650 init hints
 void vinzz_adreno650_init() {
-    GLES.glEnable(0x0B44);        // GL_SCISSOR_TEST - tiled fast clear
-    GLES.glHint(0x0C54, 0x1101);  // GL_FOG_HINT, GL_FASTEST
-    GLES.glHint(0x0C52, 0x1101);  // GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST
-    GLES.glDisable(0x0BD0);       // GL_DITHER off
+    if (global_settings.vinzz_disable_dither)
+        GLES.glDisable(0x0BD0); // GL_DITHER
+    if (global_settings.vinzz_fast_hints) {
+        GLES.glHint(0x8B8B, 0x1101); // GL_FRAGMENT_SHADER_DERIVATIVE_HINT GL_FASTEST
+        GLES.glHint(0x8192, 0x1101); // GL_GENERATE_MIPMAP_HINT GL_FASTEST
+    }
 }
 
-// ============================================
-// OPT 29: Fast clear (skip stencil on default FBO)
-// ============================================
+// Opt 29: Fast clear
 extern GLuint current_draw_fbo;
 void vinzz_fast_clear(uint32_t mask) {
     if ((mask & 0x0400) && current_draw_fbo == 0) {
@@ -122,47 +109,38 @@ void vinzz_fast_clear(uint32_t mask) {
     GLES.glClear(mask);
 }
 
-// ============================================
-// OPT 11: Buffer orphaning
-// ============================================
+// Opt 11: Buffer orphaning
 void vinzz_orphan_buffer(uint32_t target, int size) {
-    GLES.glBufferData(target, size, nullptr, 0x88E0); // GL_STREAM_DRAW
+    GLES.glBufferData(target, size, nullptr, 0x88E0);
 }
 
-// ============================================
-// OPT 30: Track deleted textures
-// ============================================
+// Opt 30: Track deleted textures (invalidate state cache)
 void vinzz_track_deleted_tex(uint32_t id) {
+    // Invalidate tex cache entry
+    for (int i = 0; i < 32; i++) {
+        if (g_vstate.tex_bound[i] == id)
+            g_vstate.tex_bound[i] = 0;
+    }
     g_last_tex_deleted[g_tex_del_idx++ & 63] = id;
 }
 
-// ============================================
-// OPT 43: Clamp mip levels
-// ============================================
+// Opt 43: Mip level clamp
 void vinzz_clamp_mip_levels(uint32_t target, int max_level) {
     GLES.glTexParameteri(target, 0x813D, max_level);
 }
 
-// ============================================
-// OPT 46: Fence pool
-// ============================================
+// Opt 46: Fence pool
 void* vinzz_get_fence() {
     if (g_fence_pool_size > 0)
         return (void*)(uintptr_t)g_fence_pool[--g_fence_pool_size];
     return nullptr;
 }
 
-// ============================================
-// OPT 50: Unsynchronized buffer map
-// ============================================
+// Opt 50: Unsync map
 void* vinzz_map_write_unsync(uint32_t target, int offset, int length) {
-    return GLES.glMapBufferRange(target, offset, length,
-        0x0002 | 0x0020 | 0x0040);
+    return GLES.glMapBufferRange(target, offset, length, 0x0002 | 0x0020 | 0x0040);
 }
 
-// ============================================
-// FRAME MANAGEMENT
-// ============================================
 void vinzz_reset_draw_count() {
     g_draw_call_frame_count = g_draw_call_count;
     g_draw_call_count = 0;
@@ -171,11 +149,7 @@ void vinzz_reset_draw_count() {
 void vinzz_perf_init() {
     g_vstate.reset();
     g_use_tex_storage = (g_gles_caps.major >= 3);
-    if (global_settings.vinzz_fast_hints) {
-        vinzz_adreno650_init();
-    }
-    /* VinzzRenderer: 50 optimizations initialized! */
-    /* VinzzRenderer: Adreno 650 Snapdragon 870 - Max FPS mode */
+    vinzz_adreno650_init();
 }
 
 void vinzz_perf_frame_begin() {
@@ -185,7 +159,5 @@ void vinzz_perf_frame_begin() {
 
 void vinzz_perf_frame_end() {
     static int frame = 0;
-    if (++frame % 600 == 0) {
-        /* VinzzRenderer: Draw calls/frame: %d */
-    }
+    frame++;
 }
