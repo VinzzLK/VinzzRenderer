@@ -91,11 +91,11 @@ void vinzz_perf_init() {
 
     init_extensions();
 
-    if (global_settings.vinzz_gl_fast_hints) {
+    if (global_settings.vinzz_fast_hints) {
         GLES.glHint(0x8B8B,0x1101);
         GLES.glHint(0x8192,0x1101);
     }
-    if (global_settings.vinzz_disable_dithering)
+    if (global_settings.vinzz_disable_dither)
         GLES.glDisable(0x0BD0);
 
     if (global_settings.vinzz_no_thermal_throttle)

@@ -125,7 +125,7 @@ inline void vinzz_invalidate_fbo_cache(uint32_t fbo) {
 // SKIP TINY DRAWS
 // ============================================
 inline bool vinzz_should_skip_draw(int count) {
-    return global_settings.vinzz_skip_tiny_draws && count < 6;
+    return global_settings.vinzz_skip_small_draws && count < 6;
 }
 
 // ============================================
@@ -188,7 +188,7 @@ extern bool g_has_multidraw;
 inline void vinzz_multi_draw_elements(uint32_t mode, const int* counts,
                                       uint32_t type,
                                       const void* const* indices, int dc) {
-    if (global_settings.vinzz_sodium_multidraw && g_has_multidraw
+    if (global_settings.vinzz_sodium_mode && g_has_multidraw
         && pfn_MultiDrawElements) {
         pfn_MultiDrawElements(mode, counts, type, indices, dc);
     } else {
@@ -223,7 +223,7 @@ extern void* g_fence_pool[VFENCE_SIZE];
 extern int   g_fence_idx;
 
 inline void* vinzz_acquire_fence() {
-    if (!global_settings.vinzz_fence_sync_pool)
+    if (!global_settings.vinzz_fence_pool)
         return (void*)GLES.glFenceSync(0x9117,0);
     int slot = g_fence_idx % VFENCE_SIZE;
     if (g_fence_pool[slot]) {
@@ -247,7 +247,7 @@ inline bool vinzz_fence_ready(void* f) {
 // ============================================
 extern bool g_disjoint_checked_this_frame;
 inline bool vinzz_should_check_disjoint() {
-    if (global_settings.vinzz_disable_disjoint_timer) return false;
+    if (global_settings.vinzz_disjoint_timer_off) return false;
     if (g_disjoint_checked_this_frame) return false;
     g_disjoint_checked_this_frame = true;
     return true;
@@ -270,7 +270,7 @@ inline void vinzz_invalidate_depth(uint32_t fbo) {
 // COLOR BUFFER INVALIDATION
 // ============================================
 inline void vinzz_invalidate_color(uint32_t fbo) {
-    if (!global_settings.vinzz_color_buf_invalidation) return;
+    if (!global_settings.vinzz_color_invalidate) return;
     uint32_t prev=g_vs.fbo_draw;
     if (prev!=fbo) GLES.glBindFramebuffer(0x8D40,fbo);
     uint32_t att=0x8CE0;
@@ -312,7 +312,7 @@ inline bool vinzz_load_program_binary(uint32_t prog, uint64_t hash) {
 #ifndef __ANDROID__
     return false;
 #else
-    if (!global_settings.vinzz_aggressive_shader_cache) return false;
+    if (!global_settings.vinzz_shader_cache_aggressive) return false;
     char path[256];
     snprintf(path,sizeof(path),"/sdcard/MG/shadercache/%016llx.bin",
              (unsigned long long)hash);
@@ -330,7 +330,7 @@ inline void vinzz_save_program_binary(uint32_t prog, uint64_t hash) {
 #ifndef __ANDROID__
     return;
 #else
-    if (!global_settings.vinzz_aggressive_shader_cache) return;
+    if (!global_settings.vinzz_shader_cache_aggressive) return;
     mkdir("/sdcard/MG/shadercache",0755);
     int len=0;
     GLES.glGetProgramiv(prog,0x8741,&len);
@@ -350,7 +350,7 @@ inline void vinzz_save_program_binary(uint32_t prog, uint64_t hash) {
 // EARLY FRAGMENT TEST / MEDIUMP / REDUCE PRECISION
 // ============================================
 inline std::string vinzz_inject_early_frag(const std::string& src) {
-    if (!global_settings.vinzz_early_fragment_test) return src;
+    if (!global_settings.vinzz_mediump_fragment) return src;
     if (src.find("discard")!=std::string::npos) return src;
     size_t pos=src.find('\n');
     if (pos==std::string::npos) return src;
@@ -414,7 +414,7 @@ struct IBPoolEntry { uint32_t id; int size; bool used; };
 extern IBPoolEntry g_ib_pool[IB_POOL_SIZE];
 
 inline uint32_t vinzz_get_ib(int byte_size) {
-    if (!global_settings.vinzz_index_buffer_reuse) {
+    if (!global_settings.vinzz_index_reuse) {
         uint32_t id; GLES.glGenBuffers(1,(GLuint*)&id); return id;
     }
     for (int i=0;i<IB_POOL_SIZE;i++)
@@ -424,7 +424,7 @@ inline uint32_t vinzz_get_ib(int byte_size) {
     uint32_t id; GLES.glGenBuffers(1,(GLuint*)&id); return id;
 }
 inline void vinzz_return_ib(uint32_t id, int byte_size) {
-    if (!global_settings.vinzz_index_buffer_reuse) {
+    if (!global_settings.vinzz_index_reuse) {
         GLES.glDeleteBuffers(1,(const GLuint*)&id); return;
     }
     for (int i=0;i<IB_POOL_SIZE;i++)
