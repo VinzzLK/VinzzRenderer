@@ -2,8 +2,6 @@
 #include "vinzz_perf.h"
 #include "log.h"
 #include <time.h>
-#include <dlfcn.h>
-
 // globals
 VinzzStateCache g_vs;
 std::unordered_map<UniformKey,float,UniformKeyHash,UniformKeyEq> g_uni1f;
@@ -83,6 +81,9 @@ static void init_extensions() {
 }
 
 static void init_thermal_hint() {
+#ifndef __ANDROID__
+    return;
+#else
 #ifndef __ANDROID__
     return;
 #else

@@ -1,22 +1,38 @@
 #pragma once
+
+// ============================================
+// Platform-specific includes
+// ============================================
+#ifdef __ANDROID__
+#include <android/log.h>
+#include <dlfcn.h>
+#include <unistd.h>
+#define VLOG(...) __android_log_print(ANDROID_LOG_INFO, "VinzzPerf", __VA_ARGS__)
+
+// Thermal hint types (Android 12+ / API 31)
+typedef void* APerformanceHintManager;
+typedef void* APerformanceHintSession;
+typedef APerformanceHintManager* (*pfn_getManager)();
+typedef APerformanceHintSession* (*pfn_createSession)(
+    APerformanceHintManager*, const int32_t*, size_t, int64_t);
+typedef int (*pfn_updateTargetWorkDuration)(APerformanceHintSession*, int64_t);
+typedef int (*pfn_reportActualWorkDuration)(APerformanceHintSession*, int64_t);
+
+extern APerformanceHintSession* g_perf_hint_session;
+extern pfn_reportActualWorkDuration pfn_reportDuration;
+extern int64_t g_frame_start_ns;
+#else
+#define VLOG(...) ((void)0)
+#endif // __ANDROID__
+
 // VinzzRenderer - vinzz_perf.h
 // REAL optimizations - no placeholders
 #include "../gles/loader.h"
 #include "../config/settings.h"
 #include <stdint.h>
 #include <string.h>
-#ifdef __ANDROID__
-#include <android/log.h>
-#include <unistd.h>
-#endif
 #include <unordered_map>
 #include <string>
-
-#ifdef __ANDROID__
-#define VLOG(...) __android_log_print(ANDROID_LOG_INFO, "VinzzPerf", __VA_ARGS__)
-#else
-#define VLOG(...) ((void)0)
-#endif
 
 // ============================================
 // GL STATE CACHE (sudah ada, pertahankan)
@@ -413,19 +429,8 @@ inline std::string vinzz_reduce_precision(const std::string& src) {
 // Android PerformanceHint API (API 31+)
 // ============================================
 #ifdef __ANDROID__
-typedef void* APerformanceHintManager;
-typedef void* APerformanceHintSession;
-typedef APerformanceHintManager* (*pfn_getManager)();
-typedef APerformanceHintSession* (*pfn_createSession)(
     APerformanceHintManager*, const int32_t*, size_t, int64_t);
-typedef int (*pfn_updateTargetWorkDuration)(APerformanceHintSession*, int64_t);
-typedef int (*pfn_reportActualWorkDuration)(APerformanceHintSession*, int64_t);
 
-#ifdef __ANDROID__
-extern APerformanceHintSession* g_perf_hint_session;
-extern pfn_reportActualWorkDuration pfn_reportDuration;
-extern int64_t g_frame_start_ns;
-#endif
 
 inline void vinzz_thermal_frame_begin() {
 #ifdef __ANDROID__
