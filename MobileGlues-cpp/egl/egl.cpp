@@ -1,3 +1,4 @@
+#include "vinzz_perf.h"
 // MobileGlues - egl/egl.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
@@ -220,7 +221,8 @@ extern "C"
         return egl_eglWaitNative(engine);
     }
 
-    EGL_API EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
+    EGL_API EGLBoolean vinzz_perf_frame_end();
+eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
         EGLBoolean result;

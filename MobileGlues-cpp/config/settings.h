@@ -255,6 +255,15 @@ struct global_settings_t {
     bool vinzz_sodium_translucent;    // Sodium translucent layer fast
     bool vinzz_sodium_region_cull;    // Sodium region culling assist
     bool vinzz_iris_compat_strict;    // Strict Iris shader compatibility
+    bool vinzz_skip_tiny_draws = true;
+    bool vinzz_sodium_multidraw = true;
+    bool vinzz_fence_sync_pool = true;
+    bool vinzz_disable_disjoint_timer = true;
+    bool vinzz_smart_depth_invalidation = true;
+    bool vinzz_color_buf_invalidation = false;
+    bool vinzz_aggressive_shader_cache = true;
+    bool vinzz_no_thermal_throttle = true;
+    bool vinzz_index_buffer_reuse = true;
 };
 
 extern global_settings_t global_settings;

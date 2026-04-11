@@ -1,3 +1,4 @@
+#include "vinzz_perf.h"
 // MobileGlues - gl/shader.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
@@ -49,6 +50,16 @@ bool is_direct_shader(const char* glsl) {
 
 bool check_if_sampler_buffer_used(std::string str) {
     return str.find("samplerBuffer") != std::string::npos;
+}
+
+
+// VinzzRenderer: shader injection
+static std::string vinzz_process_frag_shader(const std::string& src) {
+    std::string out = src;
+    out = vinzz_inject_early_frag(out);
+    out = vinzz_inject_mediump(out);
+    out = vinzz_reduce_precision(out);
+    return out;
 }
 
 void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, const GLint* length) {

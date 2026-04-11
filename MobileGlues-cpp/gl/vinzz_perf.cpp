@@ -1,163 +1,148 @@
 // VinzzRenderer - vinzz_perf.cpp
-// Real implementation of 50 Adreno 650 optimizations
 #include "vinzz_perf.h"
-#include "../gles/loader.h"
-#include "../config/settings.h"
+#include "log.h"
+#include <time.h>
+#include <dlfcn.h>
 
-// Global state
-VinzzStateCache g_vstate;
-int g_draw_call_count = 0;
-int g_draw_call_frame_count = 0;
-bool g_needs_barrier = false;
-bool g_use_tex_storage = false;
-bool g_spo_supported = false;
-bool g_shaders_warmed = false;
-int g_flush_defer = 0;
+// globals
+VinzzStateCache g_vs;
+std::unordered_map<UniformKey,float,UniformKeyHash,UniformKeyEq> g_uni1f;
+std::unordered_map<UniformKey,int,  UniformKeyHash,UniformKeyEq> g_uni1i;
+std::unordered_map<uint64_t,int> g_uloc_cache;
+std::unordered_map<uint64_t,int> g_aloc_cache;
+std::unordered_map<uint32_t,uint32_t> g_fbo_status_cache;
 
-std::unordered_map<uint64_t, int> g_uniform_loc_cache;
-std::unordered_map<uint64_t, float> g_uniform_float_cache;
-std::unordered_map<uint64_t, uint64_t> g_matrix_hash_cache;
-std::unordered_map<uint64_t, int> g_attrib_cache;
-std::vector<VinzzSamplerDesc> g_sampler_pool;
+// multidraw
+PFNGLMULTIDRAWELEMENTSEXT pfn_MultiDrawElements = nullptr;
+bool g_has_multidraw = false;
 
-uint32_t g_fence_pool[8] = {0};
-int g_fence_pool_size = 0;
+// QCOM tiling
+PFNGLSTARTTILINGQCOM pfn_StartTiling = nullptr;
+PFNGLENDTILINGQCOM   pfn_EndTiling   = nullptr;
+bool g_has_qcom_tiling = false;
 
-static uint32_t g_last_tex_deleted[64] = {0};
-static int g_tex_del_idx = 0;
+// fence pool
+void* g_fence_pool[VFENCE_SIZE] = {};
+int   g_fence_idx = 0;
 
-// Opt 17: Barrier emit
-void vinzz_emit_barrier_if_needed(uint32_t bits) {
-    if (g_needs_barrier) {
-        GLES.glMemoryBarrier(bits);
-        g_needs_barrier = false;
+// disjoint
+bool g_disjoint_checked_this_frame = false;
+
+// aniso
+float g_max_aniso = 0.0f;
+
+// ASTC
+bool g_has_astc = false;
+
+// thermal
+APerformanceHintSession* g_perf_hint_session = nullptr;
+pfn_reportActualWorkDuration pfn_reportDuration = nullptr;
+int64_t g_frame_start_ns = 0;
+
+// IB pool
+IBPoolEntry g_ib_pool[IB_POOL_SIZE] = {};
+
+// polygon offset
+float g_po_factor=0, g_po_units=0;
+
+extern int g_is_adreno_650;
+
+static void init_extensions() {
+    const char* ext = (const char*)GLES.glGetString(GL_EXTENSIONS);
+    if (!ext) return;
+
+    // MultiDraw
+    if (strstr(ext,"GL_EXT_multi_draw_arrays")) {
+        pfn_MultiDrawElements = (PFNGLMULTIDRAWELEMENTSEXT)
+            eglGetProcAddress("glMultiDrawElementsEXT");
+        g_has_multidraw = pfn_MultiDrawElements != nullptr;
+        if (g_has_multidraw) VLOG("MultiDrawElements: OK");
+    }
+
+    // QCOM Tiling
+    if (strstr(ext,"GL_QCOM_tiled_rendering")) {
+        pfn_StartTiling = (PFNGLSTARTTILINGQCOM)
+            eglGetProcAddress("glStartTilingQCOM");
+        pfn_EndTiling = (PFNGLENDTILINGQCOM)
+            eglGetProcAddress("glEndTilingQCOM");
+        g_has_qcom_tiling = pfn_StartTiling && pfn_EndTiling;
+        if (g_has_qcom_tiling) VLOG("QCOM Tiling: OK");
+    }
+
+    // ASTC
+    if (strstr(ext,"GL_KHR_texture_compression_astc_ldr")) {
+        g_has_astc = true;
+        VLOG("ASTC: OK");
     }
 }
 
-// Opt 18: Uniform location cache
-int vinzz_get_uniform(uint32_t prog, const char* name) {
-    if (!global_settings.vinzz_batch_uniforms)
-        return GLES.glGetUniformLocation(prog, name);
-    uint64_t key = ((uint64_t)prog << 32) ^ std::hash<std::string>{}(name);
-    auto it = g_uniform_loc_cache.find(key);
-    if (it != g_uniform_loc_cache.end()) return it->second;
-    int loc = GLES.glGetUniformLocation(prog, name);
-    g_uniform_loc_cache[key] = loc;
-    return loc;
-}
+static void init_thermal_hint() {
+    // Android 12+ (API 31) - libandroid.so
+    void* lib = dlopen("libandroid.so", RTLD_NOW|RTLD_LOCAL);
+    if (!lib) return;
 
-void vinzz_clear_uniform_cache(uint32_t prog) {
-    for (auto it = g_uniform_loc_cache.begin(); it != g_uniform_loc_cache.end();) {
-        if ((it->first >> 32) == prog) it = g_uniform_loc_cache.erase(it);
-        else ++it;
+    auto getManager = (pfn_getManager)
+        dlsym(lib,"APerformanceHint_getManager");
+    auto createSession = (pfn_createSession)
+        dlsym(lib,"APerformanceHint_createSession");
+    auto setTarget = (pfn_updateTargetWorkDuration)
+        dlsym(lib,"APerformanceHint_updateTargetWorkDuration");
+    pfn_reportDuration = (pfn_reportActualWorkDuration)
+        dlsym(lib,"APerformanceHint_reportActualWorkDuration");
+
+    if (!getManager||!createSession||!setTarget||!pfn_reportDuration) return;
+
+    APerformanceHintManager* mgr = getManager();
+    if (!mgr) return;
+
+    // tid = render thread
+    int32_t tids[1] = {(int32_t)gettid()};
+    // target = 16.6ms (60fps) in nanoseconds
+    g_perf_hint_session = createSession(mgr, tids, 1, 16666667LL);
+    if (g_perf_hint_session) {
+        setTarget(g_perf_hint_session, 16666667LL);
+        VLOG("Thermal PerformanceHint session: OK");
     }
-    for (auto it = g_uniform_float_cache.begin(); it != g_uniform_float_cache.end();) {
-        if ((it->first >> 32) == prog) it = g_uniform_float_cache.erase(it);
-        else ++it;
-    }
-    for (auto it = g_matrix_hash_cache.begin(); it != g_matrix_hash_cache.end();) {
-        if ((it->first >> 32) == prog) it = g_matrix_hash_cache.erase(it);
-        else ++it;
-    }
-}
-
-// Opt 19: Attrib location cache
-int vinzz_get_attrib(uint32_t prog, const char* name) {
-    uint64_t key = ((uint64_t)prog << 32) ^ std::hash<std::string>{}(name);
-    auto it = g_attrib_cache.find(key);
-    if (it != g_attrib_cache.end()) return it->second;
-    int loc = GLES.glGetAttribLocation(prog, name);
-    g_attrib_cache[key] = loc;
-    return loc;
-}
-
-// Opt 20: Sampler pool
-uint32_t vinzz_get_sampler(uint32_t min_f, uint32_t mag_f, uint32_t ws, uint32_t wt, float aniso) {
-    for (auto& s : g_sampler_pool) {
-        if (s.min_filter==min_f && s.mag_filter==mag_f &&
-            s.wrap_s==ws && s.wrap_t==wt && s.max_aniso==aniso)
-            return s.sampler_id;
-    }
-    uint32_t sid = 0;
-    GLES.glGenSamplers(1, &sid);
-    GLES.glSamplerParameteri(sid, 0x2800, mag_f);
-    GLES.glSamplerParameteri(sid, 0x2801, min_f);
-    GLES.glSamplerParameteri(sid, 0x2802, ws);
-    GLES.glSamplerParameteri(sid, 0x2803, wt);
-    if (aniso > 1.0f) GLES.glSamplerParameterf(sid, 0x84FE, aniso);
-    g_sampler_pool.push_back({min_f, mag_f, ws, wt, aniso, sid});
-    return sid;
-}
-
-// Opt 21-25: Adreno 650 init hints
-void vinzz_adreno650_init() {
-    if (global_settings.vinzz_disable_dither)
-        GLES.glDisable(0x0BD0); // GL_DITHER
-    if (global_settings.vinzz_fast_hints) {
-        GLES.glHint(0x8B8B, 0x1101); // GL_FRAGMENT_SHADER_DERIVATIVE_HINT GL_FASTEST
-        GLES.glHint(0x8192, 0x1101); // GL_GENERATE_MIPMAP_HINT GL_FASTEST
-    }
-}
-
-// Opt 29: Fast clear
-extern GLuint current_draw_fbo;
-void vinzz_fast_clear(uint32_t mask) {
-    if ((mask & 0x0400) && current_draw_fbo == 0) {
-        GLES.glClear(mask & ~0x0400u);
-        return;
-    }
-    GLES.glClear(mask);
-}
-
-// Opt 11: Buffer orphaning
-void vinzz_orphan_buffer(uint32_t target, int size) {
-    GLES.glBufferData(target, size, nullptr, 0x88E0);
-}
-
-// Opt 30: Track deleted textures (invalidate state cache)
-void vinzz_track_deleted_tex(uint32_t id) {
-    // Invalidate tex cache entry
-    for (int i = 0; i < 32; i++) {
-        if (g_vstate.tex_bound[i] == id)
-            g_vstate.tex_bound[i] = 0;
-    }
-    g_last_tex_deleted[g_tex_del_idx++ & 63] = id;
-}
-
-// Opt 43: Mip level clamp
-void vinzz_clamp_mip_levels(uint32_t target, int max_level) {
-    GLES.glTexParameteri(target, 0x813D, max_level);
-}
-
-// Opt 46: Fence pool
-void* vinzz_get_fence() {
-    if (g_fence_pool_size > 0)
-        return (void*)(uintptr_t)g_fence_pool[--g_fence_pool_size];
-    return nullptr;
-}
-
-// Opt 50: Unsync map
-void* vinzz_map_write_unsync(uint32_t target, int offset, int length) {
-    return GLES.glMapBufferRange(target, offset, length, 0x0002 | 0x0020 | 0x0040);
-}
-
-void vinzz_reset_draw_count() {
-    g_draw_call_frame_count = g_draw_call_count;
-    g_draw_call_count = 0;
 }
 
 void vinzz_perf_init() {
-    g_vstate.reset();
-    g_use_tex_storage = (g_gles_caps.major >= 3);
-    vinzz_adreno650_init();
+    g_vs.invalidate();
+    memset(g_ib_pool, 0, sizeof(g_ib_pool));
+    memset(g_fence_pool, 0, sizeof(g_fence_pool));
+    g_fbo_status_cache.clear();
+    g_uni1f.clear(); g_uni1i.clear();
+    g_uloc_cache.clear(); g_aloc_cache.clear();
+
+    init_extensions();
+
+    if (global_settings.vinzz_gl_fast_hints) {
+        GLES.glHint(0x8B8B, 0x1101); // derivative FASTEST
+        GLES.glHint(0x8192, 0x1101); // mipmap FASTEST
+        VLOG("GL hints: FASTEST");
+    }
+    if (global_settings.vinzz_disable_dithering) {
+        GLES.glDisable(0x0BD0);
+        VLOG("Dither: OFF");
+    }
+
+    float aniso = (float)global_settings.vinzz_anisotropic_level;
+    if (aniso < 1.0f) aniso = 1.0f;
+    if (aniso > 16.0f) aniso = 16.0f;
+
+    if (global_settings.vinzz_no_thermal_throttle)
+        init_thermal_hint();
+
+    VLOG("VinzzRenderer init done");
 }
 
 void vinzz_perf_frame_begin() {
-    vinzz_reset_draw_count();
-    g_flush_defer = 0;
+    g_disjoint_checked_this_frame = false;
+    vinzz_thermal_frame_begin();
+    // QCOM tiling dipanggil setelah tahu ukuran surface
+    // (caller yang tahu w/h, panggil vinzz_begin_tiling(0,0,w,h))
 }
 
 void vinzz_perf_frame_end() {
-    static int frame = 0;
-    frame++;
+    vinzz_end_tiling();
+    vinzz_thermal_frame_end();
 }

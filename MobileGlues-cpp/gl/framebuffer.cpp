@@ -1,3 +1,4 @@
+#include "vinzz_perf.h"
 // MobileGlues - gl/framebuffer.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
@@ -242,7 +243,7 @@ GLenum glCheckFramebufferStatus(GLenum target) {
             return g_cached_fbo_status;
         }
     }
-    GLenum status = GLES.glCheckFramebufferStatus(target);
+    GLenum status = vinzz_check_fbo_status(target);
     if (global_settings.vinzz_fbo_cache && target == GL_FRAMEBUFFER) {
         g_cached_fbo_id = current_draw_fbo;
         g_cached_fbo_status = status;
