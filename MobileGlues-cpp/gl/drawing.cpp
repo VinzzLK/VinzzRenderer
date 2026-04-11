@@ -6,6 +6,7 @@
 // End of Source File Header
 
 #include "drawing.h"
+#include "vinzz_perf.h"
 #include "buffer.h"
 #include "framebuffer.h"
 #include "mg.h"

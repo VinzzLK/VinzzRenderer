@@ -6,6 +6,7 @@
 // End of Source File Header
 
 #include "includes.h"
+#include "vinzz_perf.h"
 
 struct static_block_t {
     static_block_t() { proc_init(); }

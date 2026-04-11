@@ -6,6 +6,7 @@
 // End of Source File Header
 
 #include "texture.h"
+#include "vinzz_perf.h"
 #include "GLES3/gl32.h"
 
 #include <cstdlib>
