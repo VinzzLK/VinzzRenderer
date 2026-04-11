@@ -35,9 +35,11 @@ float g_max_aniso = 0.0f;
 bool g_has_astc = false;
 
 // thermal
+#ifdef __ANDROID__
 APerformanceHintSession* g_perf_hint_session = nullptr;
 pfn_reportActualWorkDuration pfn_reportDuration = nullptr;
 int64_t g_frame_start_ns = 0;
+#endif
 
 // IB pool
 IBPoolEntry g_ib_pool[IB_POOL_SIZE] = {};
@@ -53,18 +55,22 @@ static void init_extensions() {
 
     // MultiDraw
     if (strstr(ext,"GL_EXT_multi_draw_arrays")) {
+#ifdef __ANDROID__
         pfn_MultiDrawElements = (PFNGLMULTIDRAWELEMENTSEXT)
             eglGetProcAddress("glMultiDrawElementsEXT");
+#endif
         g_has_multidraw = pfn_MultiDrawElements != nullptr;
         if (g_has_multidraw) VLOG("MultiDrawElements: OK");
     }
 
     // QCOM Tiling
     if (strstr(ext,"GL_QCOM_tiled_rendering")) {
+#ifdef __ANDROID__
         pfn_StartTiling = (PFNGLSTARTTILINGQCOM)
             eglGetProcAddress("glStartTilingQCOM");
         pfn_EndTiling = (PFNGLENDTILINGQCOM)
             eglGetProcAddress("glEndTilingQCOM");
+#endif
         g_has_qcom_tiling = pfn_StartTiling && pfn_EndTiling;
         if (g_has_qcom_tiling) VLOG("QCOM Tiling: OK");
     }
@@ -77,7 +83,9 @@ static void init_extensions() {
 }
 
 static void init_thermal_hint() {
-    // Android 12+ (API 31) - libandroid.so
+#ifndef __ANDROID__
+    return;
+#else
     void* lib = dlopen("libandroid.so", RTLD_NOW|RTLD_LOCAL);
     if (!lib) return;
 
@@ -103,6 +111,7 @@ static void init_thermal_hint() {
         setTarget(g_perf_hint_session, 16666667LL);
         VLOG("Thermal PerformanceHint session: OK");
     }
+#endif // __ANDROID__
 }
 
 void vinzz_perf_init() {

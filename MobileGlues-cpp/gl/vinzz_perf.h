@@ -5,11 +5,18 @@
 #include "../config/settings.h"
 #include <stdint.h>
 #include <string.h>
+#ifdef __ANDROID__
 #include <android/log.h>
+#include <unistd.h>
+#endif
 #include <unordered_map>
 #include <string>
 
+#ifdef __ANDROID__
 #define VLOG(...) __android_log_print(ANDROID_LOG_INFO, "VinzzPerf", __VA_ARGS__)
+#else
+#define VLOG(...) ((void)0)
+#endif
 
 // ============================================
 // GL STATE CACHE (sudah ada, pertahankan)
@@ -308,6 +315,9 @@ inline uint32_t vinzz_pick_tex_fmt(uint32_t requested_fmt) {
 #include <stdio.h>
 #include <sys/stat.h>
 inline bool vinzz_load_program_binary(uint32_t prog, uint64_t hash) {
+#ifndef __ANDROID__
+    return false; // iOS: no binary cache
+#else
     if (!global_settings.vinzz_aggressive_shader_cache) return false;
     char path[256];
     snprintf(path, sizeof(path),
@@ -325,6 +335,7 @@ inline bool vinzz_load_program_binary(uint32_t prog, uint64_t hash) {
     int ok=0;
     GLES.glGetProgramiv(prog, GL_LINK_STATUS, &ok);
     return ok == GL_TRUE;
+#endif // __ANDROID__
 }
 inline void vinzz_save_program_binary(uint32_t prog, uint64_t hash) {
     if (!global_settings.vinzz_aggressive_shader_cache) return;
@@ -346,6 +357,7 @@ inline void vinzz_save_program_binary(uint32_t prog, uint64_t hash) {
         fclose(f);
     }
     free(buf);
+#endif // __ANDROID__
 }
 
 // ============================================
@@ -400,7 +412,7 @@ inline std::string vinzz_reduce_precision(const std::string& src) {
 // NO THERMAL THROTTLE - REAL
 // Android PerformanceHint API (API 31+)
 // ============================================
-#include <dlfcn.h>
+#ifdef __ANDROID__
 typedef void* APerformanceHintManager;
 typedef void* APerformanceHintSession;
 typedef APerformanceHintManager* (*pfn_getManager)();
@@ -409,21 +421,27 @@ typedef APerformanceHintSession* (*pfn_createSession)(
 typedef int (*pfn_updateTargetWorkDuration)(APerformanceHintSession*, int64_t);
 typedef int (*pfn_reportActualWorkDuration)(APerformanceHintSession*, int64_t);
 
+#ifdef __ANDROID__
 extern APerformanceHintSession* g_perf_hint_session;
 extern pfn_reportActualWorkDuration pfn_reportDuration;
 extern int64_t g_frame_start_ns;
+#endif
 
 inline void vinzz_thermal_frame_begin() {
+#ifdef __ANDROID__
     if (!global_settings.vinzz_no_thermal_throttle || !g_perf_hint_session) return;
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     g_frame_start_ns = (int64_t)ts.tv_sec*1000000000LL + ts.tv_nsec;
+#endif
 }
 inline void vinzz_thermal_frame_end() {
+#ifdef __ANDROID__
     if (!global_settings.vinzz_no_thermal_throttle ||
         !g_perf_hint_session || !pfn_reportDuration) return;
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     int64_t now = (int64_t)ts.tv_sec*1000000000LL + ts.tv_nsec;
     pfn_reportDuration(g_perf_hint_session, now - g_frame_start_ns);
+#endif
 }
 
 // ============================================
