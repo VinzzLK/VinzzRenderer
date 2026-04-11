@@ -159,6 +159,7 @@ extern "C"
     }
 
     EGL_API EGLBoolean eglSwapInterval(EGLDisplay dpy, EGLint interval) {
+    vinzz_perf_frame_begin();
         LOG_D("eglSwapInterval, dpy: %p, interval: %d", dpy, interval);
         LOAD_EGL(eglSwapInterval)
         return egl_eglSwapInterval(dpy, interval);
