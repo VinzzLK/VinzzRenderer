@@ -23,17 +23,7 @@ static GLuint g_cached_fbo_id = 0xFFFFFFFF;
 // VinzzRenderer: QCOM tiled rendering state
 static bool g_qcom_tiling_active = false;
 
-inline void vinzz_begin_tiling(GLuint fbo) {
-    if (!global_settings.vinzz_qcom_tiling) return;
-    if (!g_gles_caps.has_qcom_tiled_rendering) return;
-    g_qcom_tiling_active = true;
-    LOG_V("[VinzzRenderer] QCOM tiling begin fbo=%u", fbo)
-}
 
-inline void vinzz_end_tiling() {
-    if (!g_qcom_tiling_active) return;
-    g_qcom_tiling_active = false;
-}
 
 // VinzzRenderer: Smart depth/stencil invalidation after render
 inline void vinzz_smart_invalidate_attachments(GLenum target) {
