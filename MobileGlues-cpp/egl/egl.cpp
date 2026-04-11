@@ -222,8 +222,9 @@ extern "C"
         return egl_eglWaitNative(engine);
     }
 
-    EGL_API EGLBoolean vinzz_perf_frame_end();
+    EGL_API EGLBoolean
 eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
+    vinzz_perf_frame_end();
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
         EGLBoolean result;
