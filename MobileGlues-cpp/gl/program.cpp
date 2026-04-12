@@ -17,6 +17,7 @@
 #include "../config/settings.h"
 #include <ankerl/unordered_dense.h>
 #include "drawing.h"
+#include "vinzz_perf.h"  // VinzzRenderer LRZ
 
 #define DEBUG 0
 
@@ -173,6 +174,9 @@ void glLinkProgram(GLuint program) {
     }
 
     GLES.glLinkProgram(program);
+    // VinzzRenderer LRZ: register program ini ke kill list kalau FS-nya
+    // punya discard atau gl_FragDepth write (dicatat saat glShaderSource).
+    vinzz_lrz_register(program);
 
     CHECK_GL_ERROR
 }

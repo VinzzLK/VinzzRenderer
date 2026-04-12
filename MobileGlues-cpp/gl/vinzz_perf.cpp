@@ -23,6 +23,11 @@ bool g_disjoint_checked_this_frame = false;
 float g_max_aniso = 0.0f;
 bool  g_has_astc  = false;
 
+// LRZ tracker storage — Adreno 650
+std::unordered_set<uint32_t> g_lrz_kill_programs;
+bool g_lrz_cur_fs_has_discard   = false;
+bool g_lrz_cur_fs_has_fragdepth = false;
+
 IBPoolEntry g_ib_pool[IB_POOL_SIZE] = {};
 
 #ifdef __ANDROID__

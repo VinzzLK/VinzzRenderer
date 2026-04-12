@@ -167,6 +167,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices
     LOG()
     LOG_D("glDrawElements, mode: %d, count: %d, type: %d, indices: %p", mode, count, type, indices)
     prepareForDraw();
+    // VinzzRenderer LRZ: cek apakah draw ini akan kill LRZ
+    // Log via: adb logcat -s VinzzPerf
+    vinzz_lrz_draw_check(gl_state->current_program);
     GLES.glDrawElements(mode, count, type, indices);
     CHECK_GL_ERROR
 }

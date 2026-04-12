@@ -111,6 +111,20 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, c
         LOG_D("\n[INFO] [Shader] Converted Shader source: \n%s", essl_src.c_str())
     }
     if (!essl_src.empty()) {
+        // VinzzRenderer LRZ FIX: process FS untuk Adreno 650 LRZ optimization.
+        // vinzz_process_frag_shader() sudah didefinisikan tapi belum dipanggil —
+        // ini fix bug tersebut sekaligus tambah LRZ discard tracking.
+        {
+            GLint _lrz_shader_type = 0;
+            GLES.glGetShaderiv(shader, GL_SHADER_TYPE, &_lrz_shader_type);
+            if (_lrz_shader_type == GL_FRAGMENT_SHADER) {
+                // Inject early_fragment_tests kalau aman (no discard, no fragDepth)
+                // + mediump + precision reduction (sesuai setting)
+                essl_src = vinzz_process_frag_shader(essl_src);
+                // LRZ: catat apakah FS ini punya discard atau gl_FragDepth write
+                vinzz_lrz_note_frag(essl_src);
+            }
+        }
         shaderInfo.id = shader;
         shaderInfo.converted = essl_src;
         const char* s[] = {essl_src.c_str()};

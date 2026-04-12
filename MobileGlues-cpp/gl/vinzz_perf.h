@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 // ── Platform logging ─────────────────────────────────────────
@@ -350,8 +351,15 @@ inline void vinzz_save_program_binary(uint32_t prog, uint64_t hash) {
 // EARLY FRAGMENT TEST / MEDIUMP / REDUCE PRECISION
 // ============================================
 inline std::string vinzz_inject_early_frag(const std::string& src) {
-    if (!global_settings.vinzz_mediump_fragment) return src;
+    // LRZ FIX: always-on untuk Adreno 650, optional via setting untuk yang lain
+    extern int g_is_adreno_650;
+    if (!global_settings.vinzz_mediump_fragment && !g_is_adreno_650) return src;
+    // Jangan inject kalau ada discard — discard MEMBUNUH LRZ
     if (src.find("discard")!=std::string::npos) return src;
+    // Jangan inject kalau ada gl_FragDepth write — depth RAW membunuh LRZ
+    if (src.find("gl_FragDepth")!=std::string::npos) return src;
+    // Jangan inject kalau sudah ada (prevent duplicate)
+    if (src.find("early_fragment_tests")!=std::string::npos) return src;
     size_t pos=src.find('\n');
     if (pos==std::string::npos) return src;
     return src.substr(0,pos+1)+"layout(early_fragment_tests) in;\n"+src.substr(pos+1);
@@ -432,6 +440,98 @@ inline void vinzz_return_ib(uint32_t id, int byte_size) {
     for (int i=0;i<IB_POOL_SIZE;i++)
         if (!g_ib_pool[i].id) { g_ib_pool[i]={id,byte_size,false}; return; }
     GLES.glDeleteBuffers(1,(const GLuint*)&id);
+}
+
+
+// ============================================
+// LRZ (Low Resolution Z) TRACKER — Adreno 650
+//
+// LRZ = hardware hierarchical Z pada Adreno.
+// Aktif  → GPU cull occluded fragment sebelum rasterize (hemat GPU banyak).
+// Nonaktif → full rasterize semua fragment termasuk yang occluded.
+//
+// LRZ MATI kalau:
+//   1. Fragment shader pakai `discard`
+//   2. Fragment shader nulis gl_FragDepth (depth read-after-write)
+//   3. glDepthFunc = GL_ALWAYS / GL_NEVER / GL_NOTEQUAL
+//   4. Depth test disabled
+//
+// Solusi yang diimplementasi di sini:
+//   - Track setiap FS yang punya discard/gl_FragDepth saat glShaderSource
+//   - Register ke g_lrz_kill_programs saat glLinkProgram
+//   - early_fragment_tests auto-inject untuk FS yang AMAN (patch 2)
+//   - Log tiap draw yang kill LRZ via VLOG
+// ============================================
+extern std::unordered_set<uint32_t> g_lrz_kill_programs;
+extern bool g_lrz_cur_fs_has_discard;
+extern bool g_lrz_cur_fs_has_fragdepth;
+
+// Dipanggil di glShaderSource, khusus fragment shader
+// Catat apakah FS ini punya discard atau gl_FragDepth write
+inline void vinzz_lrz_note_frag(const std::string& src) {
+    extern int g_is_adreno_650;
+    if (!g_is_adreno_650) return;
+    g_lrz_cur_fs_has_discard   = (src.find("discard")      != std::string::npos);
+    g_lrz_cur_fs_has_fragdepth = (src.find("gl_FragDepth") != std::string::npos);
+    if (g_lrz_cur_fs_has_discard || g_lrz_cur_fs_has_fragdepth) {
+        VLOG("LRZ NOTE FS: discard=%d fragDepth=%d",
+             (int)g_lrz_cur_fs_has_discard, (int)g_lrz_cur_fs_has_fragdepth);
+    }
+}
+
+// Dipanggil setelah glLinkProgram berhasil
+// Daftarkan program ke kill list kalau FS-nya punya discard/fragDepth
+inline void vinzz_lrz_register(uint32_t prog) {
+    extern int g_is_adreno_650;
+    if (!g_is_adreno_650) return;
+    if (g_lrz_cur_fs_has_discard || g_lrz_cur_fs_has_fragdepth) {
+        g_lrz_kill_programs.insert(prog);
+        VLOG("LRZ REGISTER KILL: prog=%u discard=%d fragDepth=%d",
+             prog, (int)g_lrz_cur_fs_has_discard, (int)g_lrz_cur_fs_has_fragdepth);
+    } else {
+        g_lrz_kill_programs.erase(prog);
+    }
+    // Reset untuk program berikutnya
+    g_lrz_cur_fs_has_discard   = false;
+    g_lrz_cur_fs_has_fragdepth = false;
+}
+
+// Unregister saat glDeleteProgram
+inline void vinzz_lrz_unregister(uint32_t prog) {
+    g_lrz_kill_programs.erase(prog);
+}
+
+// True kalau program ini TIDAK akan membunuh LRZ
+inline bool vinzz_lrz_safe(uint32_t prog) {
+    return g_lrz_kill_programs.find(prog) == g_lrz_kill_programs.end();
+}
+
+// Depth func yang kill LRZ:
+//   GL_ALWAYS=0x0207, GL_NEVER=0x0200, GL_NOTEQUAL=0x0205
+inline bool vinzz_lrz_depth_ok(uint32_t func) {
+    return func != 0x0207 && func != 0x0200 && func != 0x0205;
+}
+
+// Dipanggil sebelum setiap draw call — log LRZ killers
+// (tidak memblokir draw, hanya tracking untuk debug via adb logcat -s VinzzPerf)
+inline void vinzz_lrz_draw_check(uint32_t prog) {
+    extern int g_is_adreno_650;
+    if (!g_is_adreno_650) return;
+    // Program check
+    static uint32_t s_last_bad_prog = 0xFFFFFFFFu;
+    if (!vinzz_lrz_safe(prog) && s_last_bad_prog != prog) {
+        VLOG("LRZ KILL draw: prog=%u (has discard or gl_FragDepth write)", prog);
+        s_last_bad_prog = prog;
+    }
+    // Depth func check via cached state
+    if (!vinzz_lrz_depth_ok(g_vs.depth_func)) {
+        static uint32_t s_last_bad_df = 0u;
+        if (s_last_bad_df != g_vs.depth_func) {
+            VLOG("LRZ KILL draw: depth_func=0x%04X (ALWAYS/NEVER/NOTEQUAL)",
+                 g_vs.depth_func);
+            s_last_bad_df = g_vs.depth_func;
+        }
+    }
 }
 
 // ============================================
