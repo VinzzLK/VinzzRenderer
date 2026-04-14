@@ -180,7 +180,11 @@ struct global_settings_t {
     bool vinzz_fast_hints;         // GL_FASTEST for all hints
     bool vinzz_disable_dither;     // Disable dithering
     bool vinzz_mediump_fragment;   // Use mediump in fragment shaders
-    bool vinzz_early_z;            // Early fragment test hint
+    bool vinzz_early_z;
+ int vinzz_vertex_mediump;
+ int vinzz_fp16_varyings;
+ int vinzz_invariant_strip;
+ int vinzz_precise_strip;            // Early fragment test hint
     bool vinzz_skip_small_draws;   // Skip draws < 6 vertices
     bool vinzz_state_cache;        // Cache GL state to skip redundant calls
     bool vinzz_batch_uniforms;     // Batch uniform uploads
