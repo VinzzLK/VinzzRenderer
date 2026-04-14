@@ -534,6 +534,71 @@ inline void vinzz_lrz_draw_check(uint32_t prog) {
     }
 }
 
+
+// ============================================
+// VERTEX SHADER OPTIMIZER — Adreno 650
+//
+// VS jalan di binning pass + render pass (2x).
+// Ngurangin VS cost = efek 2x di Adreno TBDR.
+//
+// vinzz_vertex_mediump:
+//   Inject `precision mediump float/int` ke VS.
+//   Ngurangin register count → SP occupancy naik.
+//   Explicit highp di shader tetap override.
+//
+// vinzz_fp16_varyings:
+//   Ganti out/in highp varyings → mediump.
+//   Ngurangin interpolation bandwidth rasterizer.
+//   Default OFF — bisa visual artifact di beberapa shader.
+//
+// vinzz_invariant_strip:
+//   Hapus keyword `invariant`.
+//   invariant paksa tile sync antar draw call — SANGAT
+//   mahal di TBDR. Aman dihapus untuk non-shadow pass.
+//
+// vinzz_precise_strip:
+//   Hapus keyword `precise`.
+//   precise blokir fused MAD/FMA. Menghapusnya = GPU
+//   bebas pakai instruction fusion → math lebih cepat.
+// ============================================
+
+inline std::string vinzz_process_vert_shader(const std::string& src) {
+    if (!global_settings.vinzz_vertex_mediump) return src;
+    if (src.find("precision mediump float") != std::string::npos) return src;
+    if (src.find("precision highp float")   != std::string::npos) return src;
+    size_t pos = src.find('\n');
+    if (pos == std::string::npos) return src;
+    return src.substr(0, pos+1)
+           + "precision mediump float;\nprecision mediump int;\n"
+           + src.substr(pos+1);
+}
+
+inline std::string vinzz_inject_mediump_varyings(const std::string& src) {
+    if (!global_settings.vinzz_fp16_varyings) return src;
+    std::string r = src;
+    for (size_t p = 0; (p = r.find("out highp ", p)) != std::string::npos; )
+        { r.replace(p, 10, "out mediump "); p += 12; }
+    for (size_t p = 0; (p = r.find("in highp ",  p)) != std::string::npos; )
+        { r.replace(p,  9, "in mediump ");  p += 11; }
+    return r;
+}
+
+inline std::string vinzz_strip_invariant(const std::string& src) {
+    if (!global_settings.vinzz_invariant_strip) return src;
+    std::string r = src;
+    for (size_t p = 0; (p = r.find("invariant ", p)) != std::string::npos; )
+        r.erase(p, 10);
+    return r;
+}
+
+inline std::string vinzz_strip_precise(const std::string& src) {
+    if (!global_settings.vinzz_precise_strip) return src;
+    std::string r = src;
+    for (size_t p = 0; (p = r.find("precise ", p)) != std::string::npos; )
+        r.erase(p, 8);
+    return r;
+}
+
 // ============================================
 // INIT
 // ============================================

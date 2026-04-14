@@ -121,8 +121,14 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, c
                 // Inject early_fragment_tests kalau aman (no discard, no fragDepth)
                 // + mediump + precision reduction (sesuai setting)
                 essl_src = vinzz_process_frag_shader(essl_src);
-                // LRZ: catat apakah FS ini punya discard atau gl_FragDepth write
                 vinzz_lrz_note_frag(essl_src);
+                essl_src = vinzz_strip_invariant(essl_src);
+                essl_src = vinzz_strip_precise(essl_src);
+            } else if (_lrz_shader_type == GL_VERTEX_SHADER) {
+                essl_src = vinzz_process_vert_shader(essl_src);
+                essl_src = vinzz_inject_mediump_varyings(essl_src);
+                essl_src = vinzz_strip_invariant(essl_src);
+                essl_src = vinzz_strip_precise(essl_src);
             }
         }
         shaderInfo.id = shader;
