@@ -599,6 +599,43 @@ inline std::string vinzz_strip_precise(const std::string& src) {
     return r;
 }
 
+
+// ============================================
+// VULKAN MODE — Adreno 650 (VulkanMod support)
+//
+// Saat VulkanMod aktif, rendering bypass OpenGL
+// sepenuhnya. MobileGlues harus:
+//   1. Skip semua GL state cache (tidak relevan)
+//   2. Skip early_fragment_tests injection
+//   3. Skip mediump/precision injection
+//   4. Skip QCOM tiling hints (konflik dengan Vulkan WSI)
+//   5. Minimal overhead passthrough mode
+//
+// vinzz_vulkan_mode_active() cek apakah mode aktif.
+// Dipanggil di hot-path sebelum optimisasi GL.
+// ============================================
+inline bool vinzz_vulkan_mode_active() {
+    return global_settings.vinzz_vulkan_mode != 0;
+}
+
+// Inject Vulkan-friendly JVM flags via properties
+// Fix: NoSuchFieldError sun.misc.Unsafe UNSAFE di VkAndroidSurfaceCreateInfoKHR
+// Dipanggil saat init kalau vinzz_vulkan_lwjgl_patch aktif
+inline void vinzz_apply_vulkan_jvm_hints() {
+    if (!global_settings.vinzz_vulkan_mode) return;
+    if (!global_settings.vinzz_vulkan_lwjgl_patch) return;
+    // Set system properties untuk LWJGL Android compatibility
+    // Ini dibaca LWJGL saat load natives
+    setenv("LWJGL_EXTRACT_DIR", "/data/local/tmp", 0);
+    setenv("ORG_LWJGL_SYSTEM_SHAREDLIBRARYEXTRACTPATH", "/data/local/tmp", 0);
+    setenv("VK_ICD_FILENAMES", "", 0);  // Use Android's built-in Vulkan ICD
+    setenv("VK_LAYER_PATH", "", 0);     // Disable validation layers path (use built-in)
+    // Disable Vulkan validation layers untuk performa
+    if (global_settings.vinzz_vulkan_disable_validation) {
+        setenv("VK_INSTANCE_LAYERS", "", 1);  // Clear validation layers
+    }
+}
+
 // ============================================
 // INIT
 // ============================================
