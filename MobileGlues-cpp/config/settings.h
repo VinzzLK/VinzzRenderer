@@ -175,6 +175,14 @@ struct global_settings_t {
     // Rendering mode
     bool vinzz_sodium_mode;        // Sodium-optimized mode
     bool vinzz_vulkan_mode;        // Vulkan-optimized mode
+    // Vulkan sub-options
+    int  vinzz_vulkan_lwjgl_patch;
+    int  vinzz_vulkan_async_compute;
+    int  vinzz_vulkan_vma_defrag;
+    int  vinzz_vulkan_disable_validation;
+    int  vinzz_vulkan_memory_budget;
+    int  vinzz_vulkan_spirv_opt;
+    int  vinzz_vulkan_frame_overlap;
     // Performance
     bool vinzz_no_throttle;        // Disable thermal throttle hints
     bool vinzz_fast_hints;         // GL_FASTEST for all hints
