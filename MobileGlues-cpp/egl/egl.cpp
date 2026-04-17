@@ -1,4 +1,5 @@
 #include "../gl/vinzz_perf.h"
+#include "../gl/vinzz_newfeatures.h"
 // MobileGlues - egl/egl.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
@@ -225,6 +226,8 @@ extern "C"
     EGL_API EGLBoolean
 eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     vinzz_perf_frame_end();
+    vinzz_denoiser_apply();          // Feature 3
+    vinzz_cpu_preprep_frame_begin(); // Feature 2: reset queue
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
         EGLBoolean result;

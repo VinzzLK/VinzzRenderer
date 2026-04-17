@@ -192,7 +192,19 @@ struct global_settings_t {
  int vinzz_vertex_mediump;
  int vinzz_fp16_varyings;
  int vinzz_invariant_strip;
- int vinzz_precise_strip;            // Early fragment test hint
+ int vinzz_precise_strip;
+
+ // ===== VinzzRenderer NEW 5 Features =====
+
+ bool vinzz_buffer_streaming = true;
+
+ bool vinzz_cpu_preprep      = true;
+
+ bool vinzz_denoiser         = true;
+
+ bool vinzz_async_shader     = true;
+
+ bool vinzz_pipeline_cache   = true;            // Early fragment test hint
     bool vinzz_skip_small_draws;   // Skip draws < 6 vertices
     bool vinzz_state_cache;        // Cache GL state to skip redundant calls
     bool vinzz_batch_uniforms;     // Batch uniform uploads

@@ -1,5 +1,6 @@
 // VinzzRenderer - vinzz_perf.cpp
 #include "vinzz_perf.h"
+#include "vinzz_newfeatures.h"
 #include "log.h"
 
 VinzzStateCache g_vs;
@@ -106,6 +107,11 @@ void vinzz_perf_init() {
     if (global_settings.vinzz_no_thermal_throttle)
         init_thermal_hint();
 
+    vinzz_buffer_streaming_init();
+    vinzz_cpu_preprep_init();
+    vinzz_denoiser_init();
+    vinzz_async_shader_init();
+    vinzz_pipeline_cache_init("/sdcard/MG/pipeline_cache");
     VLOG("VinzzPerf init done");
 }
 

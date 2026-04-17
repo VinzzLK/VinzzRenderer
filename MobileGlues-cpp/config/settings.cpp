@@ -73,6 +73,12 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_sodium_translucent = false;
     global_settings.vinzz_sodium_region_cull = false;
     global_settings.vinzz_iris_compat_strict = true;
+    // New 5 features – all ON by default
+    global_settings.vinzz_buffer_streaming = true;
+    global_settings.vinzz_cpu_preprep      = true;
+    global_settings.vinzz_denoiser         = true;
+    global_settings.vinzz_async_shader     = true;
+    global_settings.vinzz_pipeline_cache   = true;
 }
 
 // MobileGlues - config/settings.cpp
@@ -299,6 +305,11 @@ void init_settings() {
         global_settings.vinzz_astc_prefer         = config_get_int("vinzz_astc_prefer") > 0;
         int aniso = config_get_int("vinzz_anisotropic_level");
         if (aniso >= 1 && aniso <= 16) global_settings.vinzz_anisotropic_level = aniso;
+        global_settings.vinzz_buffer_streaming = config_get_int("vinzz_buffer_streaming") != 0;
+        global_settings.vinzz_cpu_preprep      = config_get_int("vinzz_cpu_preprep") != 0;
+        global_settings.vinzz_denoiser         = config_get_int("vinzz_denoiser") != 0;
+        global_settings.vinzz_async_shader     = config_get_int("vinzz_async_shader") != 0;
+        global_settings.vinzz_pipeline_cache   = config_get_int("vinzz_pipeline_cache") != 0;
         int mip_bias_int = config_get_int("vinzz_mip_bias_x10");
         if (mip_bias_int >= -10 && mip_bias_int <= 10)
             global_settings.vinzz_mip_bias = mip_bias_int / 10.0f;
@@ -395,6 +406,12 @@ void init_settings() {
         global_settings.vinzz_sodium_region_cull = true;
         global_settings.vinzz_iris_compat_strict = true;
         LOG_V("[VinzzRenderer] Batch 2: 40 Advanced Adreno 650 opts ACTIVE")
+        global_settings.vinzz_buffer_streaming = true;
+        global_settings.vinzz_cpu_preprep      = true;
+        global_settings.vinzz_denoiser         = true;
+        global_settings.vinzz_async_shader     = true;
+        global_settings.vinzz_pipeline_cache   = true;
+        LOG_V("[VinzzRenderer] New 5 Features ACTIVE on Adreno 650")
     }
 #endif
 

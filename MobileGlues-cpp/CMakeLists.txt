@@ -99,6 +99,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
     gl/texture.cpp
     gl/drawing.cpp
     gl/vinzz_perf.cpp
+    gl/vinzz_newfeatures.cpp
     gl/multidraw.cpp
     gl/mg.cpp
     gl/buffer.cpp

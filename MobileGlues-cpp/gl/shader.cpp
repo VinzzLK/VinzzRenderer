@@ -1,4 +1,5 @@
 #include "vinzz_perf.h"
+#include "vinzz_newfeatures.h"
 // MobileGlues - gl/shader.cpp
 // Copyright (c) 2025-2026 MobileGL-Dev
 // Licensed under the GNU Lesser General Public License v2.1:
