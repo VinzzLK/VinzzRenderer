@@ -160,7 +160,6 @@ extern "C"
     }
 
     EGL_API EGLBoolean eglSwapInterval(EGLDisplay dpy, EGLint interval) {
-    vinzz_perf_frame_begin();
         LOG_D("eglSwapInterval, dpy: %p, interval: %d", dpy, interval);
         LOAD_EGL(eglSwapInterval)
         return egl_eglSwapInterval(dpy, interval);
@@ -184,7 +183,18 @@ extern "C"
     EGL_API EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx) {
         LOG_D("eglMakeCurrent, dpy: %p, draw: %p, read: %p, ctx: %p", dpy, draw, read, ctx);
         LOAD_EGL(eglMakeCurrent)
-        return egl_eglMakeCurrent(dpy, draw, read, ctx);
+        EGLBoolean result = egl_eglMakeCurrent(dpy, draw, read, ctx);
+        // VinzzRenderer: init sekali saat GL context pertama kali aktif
+        if (result == EGL_TRUE && ctx != EGL_NO_CONTEXT) {
+            static bool s_vinzz_inited = false;
+            if (!s_vinzz_inited) {
+                init_settings();
+                init_settings_post();
+                vinzz_perf_init();
+                s_vinzz_inited = true;
+            }
+        }
+        return result;
     }
 
     EGL_API EGLContext eglGetCurrentContext(void) {
@@ -225,9 +235,9 @@ extern "C"
 
     EGL_API EGLBoolean
 eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
-    vinzz_perf_frame_end();
-    vinzz_denoiser_apply();          // Feature 3
-    vinzz_cpu_preprep_frame_begin(); // Feature 2: reset queue
+        vinzz_perf_frame_begin();        // VinzzRenderer: mulai frame
+        vinzz_cpu_preprep_flush();       // Feature 2: eksekusi draw queue
+        vinzz_denoiser_apply();          // Feature 3: denoiser post-process
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
         EGLBoolean result;
@@ -238,6 +248,8 @@ eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         } else {
             result = egl_eglSwapBuffers(dpy, surface);
         }
+        vinzz_perf_frame_end();          // VinzzRenderer: akhir frame
+        vinzz_cpu_preprep_frame_begin(); // Feature 2: reset queue untuk frame berikutnya
         return result;
     }
 

@@ -1,4 +1,3 @@
-#include "settings.h"
 // VinzzRenderer GPU globals
 int g_is_adreno_650 = 0;
 int g_is_adreno_6xx = 0;
@@ -73,6 +72,10 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_sodium_translucent = false;
     global_settings.vinzz_sodium_region_cull = false;
     global_settings.vinzz_iris_compat_strict = true;
+    global_settings.vinzz_vertex_mediump  = false;
+    global_settings.vinzz_fp16_varyings   = false;
+    global_settings.vinzz_invariant_strip = false;
+    global_settings.vinzz_precise_strip   = false;
     // New 5 features – all ON by default
     global_settings.vinzz_buffer_streaming = true;
     global_settings.vinzz_cpu_preprep      = true;
@@ -303,6 +306,11 @@ void init_settings() {
         global_settings.vinzz_reduce_precision    = config_get_int("vinzz_reduce_precision") > 0;
         global_settings.vinzz_mediump_fragment    = config_get_int("vinzz_mediump_fragment") > 0;
         global_settings.vinzz_astc_prefer         = config_get_int("vinzz_astc_prefer") > 0;
+        global_settings.vinzz_vertex_mediump  = config_get_int("vinzz_vertex_mediump") > 0;
+        global_settings.vinzz_fp16_varyings   = config_get_int("vinzz_fp16_varyings") > 0;
+        global_settings.vinzz_invariant_strip = config_get_int("vinzz_invariant_strip") > 0;
+        global_settings.vinzz_precise_strip   = config_get_int("vinzz_precise_strip") > 0;
+        global_settings.vinzz_adreno_lrz = config_get_int("vinzz_lrz") > 0;
         int aniso = config_get_int("vinzz_anisotropic_level");
         if (aniso >= 1 && aniso <= 16) global_settings.vinzz_anisotropic_level = aniso;
         global_settings.vinzz_buffer_streaming = config_get_int("vinzz_buffer_streaming") != 0;
