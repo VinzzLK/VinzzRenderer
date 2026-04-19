@@ -83,6 +83,8 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_denoiser         = true;
     global_settings.vinzz_async_shader     = true;
     global_settings.vinzz_pipeline_cache   = true;
+    global_settings.vinzz_shader_complexity_gate = true;
+    global_settings.vinzz_compute_protect         = true;
 }
 
 // MobileGlues - config/settings.cpp
@@ -318,6 +320,8 @@ void init_settings() {
         global_settings.vinzz_denoiser         = config_get_int("vinzz_denoiser") != 0;
         global_settings.vinzz_async_shader     = config_get_int("vinzz_async_shader") != 0;
         global_settings.vinzz_pipeline_cache   = config_get_int("vinzz_pipeline_cache") != 0;
+        global_settings.vinzz_shader_complexity_gate = config_get_int("vinzz_shader_complexity_gate") != 0;
+        global_settings.vinzz_compute_protect         = config_get_int("vinzz_compute_protect") != 0;
         int mip_bias_int = config_get_int("vinzz_mip_bias_x10");
         if (mip_bias_int >= -10 && mip_bias_int <= 10)
             global_settings.vinzz_mip_bias = mip_bias_int / 10.0f;

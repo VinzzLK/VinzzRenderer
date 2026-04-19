@@ -288,6 +288,10 @@ struct global_settings_t {
     bool vinzz_aggressive_shader_cache = true;
     bool vinzz_no_thermal_throttle = true;
     bool vinzz_index_buffer_reuse = true;
+    // ===== VinzzRenderer: Shader Protection Features =====
+    bool vinzz_shader_complexity_gate = true;  // Skip heavy inject for complex shaders
+    bool vinzz_compute_protect         = true;  // Never touch compute shaders
+
 };
 
 extern global_settings_t global_settings;

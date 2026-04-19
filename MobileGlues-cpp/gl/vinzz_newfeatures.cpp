@@ -105,13 +105,15 @@ void vinzz_cpu_preprep_enqueue(VinzzDrawCmd& cmd) {
     std::lock_guard<std::mutex> lk(g_draw_mutex);
     if ((int)g_draw_queue.size()<g_max_queue) g_draw_queue.push_back(cmd);
 }
+// XRAY_FIXED
+// FIX: Tidak lagi sort draw queue secara global.
+// Sort by prog+tex merusak depth order chunk Minecraft (X-ray bug).
+// Sekarang hanya skip redundant state changes TANPA reorder draw calls.
 void vinzz_cpu_preprep_flush() {
     if (!g_preprep_active) return;
     std::lock_guard<std::mutex> lk(g_draw_mutex);
     if (g_draw_queue.empty()) return;
-    std::stable_sort(g_draw_queue.begin(),g_draw_queue.end(),
-        [](const VinzzDrawCmd& a,const VinzzDrawCmd& b){
-            return a.prog!=b.prog?a.prog<b.prog:a.tex0<b.tex0;});
+    // State-dedup only — urutan draw TIDAK diubah (depth order tetap benar)
     GLuint lp=0xFFFFFFFF,lt=0xFFFFFFFF,lv=0xFFFFFFFF;
     for (auto& c:g_draw_queue){
         if(!c.valid) continue;

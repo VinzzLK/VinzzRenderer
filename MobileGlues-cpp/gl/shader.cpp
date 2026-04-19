@@ -112,25 +112,42 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, c
         LOG_D("\n[INFO] [Shader] Converted Shader source: \n%s", essl_src.c_str())
     }
     if (!essl_src.empty()) {
-        // VinzzRenderer LRZ FIX: process FS untuk Adreno 650 LRZ optimization.
-        // vinzz_process_frag_shader() sudah didefinisikan tapi belum dipanggil —
-        // ini fix bug tersebut sekaligus tambah LRZ discard tracking.
+        // COMPUTE_GUARD + COMPLEXITY_CHECK
+        // FIX: Compute shader (Iris deferred, raytracing dll) TIDAK disentuh vinzz inject
+        // NEW: Shader complexity check — skip heavy opts jika shader terlalu kompleks
         {
             GLint _lrz_shader_type = 0;
             GLES.glGetShaderiv(shader, GL_SHADER_TYPE, &_lrz_shader_type);
-            if (_lrz_shader_type == GL_FRAGMENT_SHADER) {
-                // Inject early_fragment_tests kalau aman (no discard, no fragDepth)
-                // + mediump + precision reduction (sesuai setting)
+
+            // Guard: jangan sentuh compute shader sama sekali
+            bool _is_compute = (_lrz_shader_type == GL_COMPUTE_SHADER);
+
+            // Complexity check: hitung panjang shader
+            // Shader > 8000 char = kompleks, skip injection yang berat
+            bool _is_heavy = (essl_src.size() > 8000);
+
+            if (!_is_compute && _lrz_shader_type == GL_FRAGMENT_SHADER) {
                 essl_src = vinzz_process_frag_shader(essl_src);
                 vinzz_lrz_note_frag(essl_src);
-                essl_src = vinzz_strip_invariant(essl_src);
-                essl_src = vinzz_strip_precise(essl_src);
-            } else if (_lrz_shader_type == GL_VERTEX_SHADER) {
+                // Strip invariant/precise hanya untuk shader ringan-medium
+                if (!_is_heavy) {
+                    essl_src = vinzz_strip_invariant(essl_src);
+                    essl_src = vinzz_strip_precise(essl_src);
+                } else {
+                    // Shader berat: hanya strip invariant (aman), skip precise strip
+                    essl_src = vinzz_strip_invariant(essl_src);
+                }
+            } else if (!_is_compute && _lrz_shader_type == GL_VERTEX_SHADER) {
                 essl_src = vinzz_process_vert_shader(essl_src);
-                essl_src = vinzz_inject_mediump_varyings(essl_src);
-                essl_src = vinzz_strip_invariant(essl_src);
-                essl_src = vinzz_strip_precise(essl_src);
+                if (!_is_heavy) {
+                    essl_src = vinzz_inject_mediump_varyings(essl_src);
+                    essl_src = vinzz_strip_invariant(essl_src);
+                    essl_src = vinzz_strip_precise(essl_src);
+                } else {
+                    essl_src = vinzz_strip_invariant(essl_src);
+                }
             }
+            // Compute shader: pass-through tanpa modifikasi apapun
         }
         shaderInfo.id = shader;
         shaderInfo.converted = essl_src;
