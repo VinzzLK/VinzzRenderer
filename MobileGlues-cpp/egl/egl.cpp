@@ -188,10 +188,14 @@ extern "C"
         if (result == EGL_TRUE && ctx != EGL_NO_CONTEXT) {
             static bool s_vinzz_inited = false;
             if (!s_vinzz_inited) {
-                init_settings();
-                init_settings_post();
-                vinzz_perf_init();
-                s_vinzz_inited = true;
+                // Safety: pastikan GL context benar-benar siap
+                const GLubyte* ver = GLES.glGetString(GL_VERSION);
+                if (ver != nullptr) {
+                    init_settings();
+                    init_settings_post();
+                    vinzz_perf_init();
+                    s_vinzz_inited = true;
+                }
             }
         }
         return result;
