@@ -1,3 +1,4 @@
+#include "settings.h"
 // VinzzRenderer GPU globals
 int g_is_adreno_650 = 0;
 int g_is_adreno_6xx = 0;
@@ -91,7 +92,6 @@ static void vinzz_init_defaults() {
 // SPDX-License-Identifier: LGPL-2.1-only
 // End of Source File Header
 
-#include "settings.h"
 #include "config.h"
 #include "../gl/log.h"
 #include "../gl/envvars.h"
