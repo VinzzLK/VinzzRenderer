@@ -241,7 +241,6 @@ extern "C"
 eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         vinzz_perf_frame_begin();        // VinzzRenderer: mulai frame
         vinzz_cpu_preprep_flush();       // Feature 2: eksekusi draw queue
-        vinzz_denoiser_apply();          // Feature 3: denoiser post-process
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
         EGLBoolean result;
