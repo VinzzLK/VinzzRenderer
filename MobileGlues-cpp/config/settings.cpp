@@ -198,7 +198,7 @@ void init_settings() {
         LOG_V("Unsupported launcher detected, force using default config.")
         angleConfig = AngleConfig::DisableIfPossible;
         noErrorConfig = NoErrorConfig::Auto;
-        enableExtComputeShader = true  // VinzzFix;
+        enableExtComputeShader = true; // VinzzFix
         enableExtTimerQuery = true;
         enableExtDirectStateAccess = true;
         maxGlslCacheSize = 0;
