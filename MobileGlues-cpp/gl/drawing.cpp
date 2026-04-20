@@ -195,7 +195,6 @@ void bindAllAtomicCounterAsSSBO();
 // Tanpa ini, -fvisibility=hidden di CMakeLists menyembunyikan simbol ini sehingga
 // eglGetProcAddress -> glXGetProcAddress -> dlsym(RTLD_DEFAULT) return null,
 // dan Iris menganggap compute shader tidak didukung.
-extern "C" GLAPI GLAPIENTRY void glDispatchComputeARB(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) __attribute__((alias("glDispatchCompute")));
 extern "C" GLAPI GLAPIENTRY void glDispatchCompute(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) {
     LOG()
     LOG_D("glDispatchCompute, num_groups_x: %d, num_groups_y: %d, num_groups_z: %d", num_groups_x, num_groups_y,
@@ -208,6 +207,12 @@ extern "C" GLAPI GLAPIENTRY void glDispatchCompute(GLuint num_groups_x, GLuint n
     }
     GLES.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
     CHECK_GL_ERROR
+}
+
+// FIX: Darwin (iOS/macOS) does not support __attribute__((alias(...))).
+// Using a wrapper function instead for cross-platform compatibility.
+extern "C" GLAPI GLAPIENTRY void glDispatchComputeARB(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z) {
+    glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
 }
 
 void glMemoryBarrier(GLbitfield barriers) {
