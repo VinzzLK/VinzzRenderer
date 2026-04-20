@@ -138,6 +138,8 @@ void InitGLESBaseExtensions() {
                                "GL_ARB_get_program_binary",
                                "GL_ARB_separate_shader_objects",
                                "GL_ARB_multi_bind",
+                               "GL_ARB_compute_shader",
+                               "GL_ARB_compute_variable_group_size",
                                "GL_KHR_no_error"};
 
     extensions.insert(extensions.end(), std::begin(base_exts), std::end(base_exts));
