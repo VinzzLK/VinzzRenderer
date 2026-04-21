@@ -8,6 +8,7 @@
 #include "cache.h"
 #include <fstream>
 #include <cstring>
+#include <sys/stat.h>
 #include <vector>
 
 using namespace std;
@@ -166,6 +167,11 @@ void Cache::maintainCacheSize() {
 }
 
 bool Cache::load() {
+    // VinzzFix: null guard
+    if (!glsl_cache_file_path) {
+        LOG_W_FORCE("GLSL cache: glsl_cache_file_path is null, skip load")
+        return false;
+    }
     try {
         ifstream file(glsl_cache_file_path, ios::binary);
         if (!file) return false;
@@ -207,8 +213,22 @@ bool Cache::load() {
 
 void Cache::save() {
     if (global_settings.max_glsl_cache_size <= 0) return;
+    // VinzzFix: null guard + pastikan direktori ada sebelum tulis
+    if (!glsl_cache_file_path) return;
+    // Buat direktori jika belum ada
+    {
+        std::string p(glsl_cache_file_path);
+        auto slash = p.rfind('/');
+        if (slash != std::string::npos) {
+            std::string dir = p.substr(0, slash);
+            mkdir(dir.c_str(), 0755); // ok if already exists
+        }
+    }
     ofstream file(glsl_cache_file_path, ios::binary);
-    if (!file) return;
+    if (!file) {
+        LOG_W_FORCE("GLSL cache: cannot open file for writing: %s", glsl_cache_file_path)
+        return;
+    }
 
     size_t count = cacheList.size();
     file.write(reinterpret_cast<const char*>(&count), sizeof(count));
@@ -222,6 +242,10 @@ void Cache::save() {
 }
 
 Cache& Cache::get_instance() {
+    // VinzzFix: pastikan path sudah di-init sebelum cache dibuat
+    if (!glsl_cache_file_path) {
+        check_path();
+    }
     static Cache s_cache;
     return s_cache;
 }
