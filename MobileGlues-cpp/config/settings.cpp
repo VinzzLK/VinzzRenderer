@@ -11,7 +11,7 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_fast_hints = false;
     global_settings.vinzz_disable_dither = false;
     global_settings.vinzz_mediump_fragment = false;
-    global_settings.vinzz_early_z = false;
+    global_settings.vinzz_early_z = true;  // Adreno LRZ effective
     global_settings.vinzz_skip_small_draws = false;
     global_settings.vinzz_state_cache = false;
     global_settings.vinzz_batch_uniforms = false;
@@ -132,7 +132,7 @@ void init_settings() {
         success ? static_cast<AngleConfig>(config_get_int("enableANGLE")) : AngleConfig::DisableIfPossible;
     NoErrorConfig noErrorConfig =
         success ? static_cast<NoErrorConfig>(config_get_int("enableNoError")) : NoErrorConfig::Auto;
-    bool enableExtComputeShader = success ? (config_get_int("enableExtComputeShader") > 0) : false;
+    bool enableExtComputeShader = success ? (config_get_int("enableExtComputeShader") != 0) : true;  // VinzzFix: default ON
     bool enableExtTimerQuery = success ? (config_get_int("enableExtTimerQuery") > 0) : false;
     bool enableExtDirectStateAccess = success ? (config_get_int("enableExtDirectStateAccess") > 0) : false;
     AngleDepthClearFixMode angleDepthClearFixMode =
@@ -198,7 +198,6 @@ void init_settings() {
         LOG_V("Unsupported launcher detected, force using default config.")
         angleConfig = AngleConfig::DisableIfPossible;
         noErrorConfig = NoErrorConfig::Auto;
-        enableExtComputeShader = true; // VinzzFix
         enableExtTimerQuery = true;
         enableExtDirectStateAccess = true;
         maxGlslCacheSize = 0;
