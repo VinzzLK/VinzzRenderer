@@ -55,6 +55,72 @@ bool check_if_sampler_buffer_used(std::string str) {
 
 
 // VinzzRenderer: shader injection
+
+// OPT-2: Precision Promotion Guard
+// Downgrade highp → mediump untuk variable yang aman di Adreno 650
+// (koordinat texture, color output, fog — tidak butuh double precision)
+inline std::string vinzz_precision_guard_apply(const std::string& src) {
+    if (!global_settings.vinzz_precision_guard) return src;
+
+    std::string out = src;
+    // Safe to downgrade: texture coords, color outputs, varying interpolants
+    // Tidak downgrade: position, depth, matrix operations
+    // Strategi: ganti "highp" di output/varying/sampler declarations
+    size_t pos = 0;
+    while ((pos = out.find("highp ", pos)) != std::string::npos) {
+        // Cek konteks: jangan downgrade gl_Position, depth, mat
+        size_t line_start = out.rfind('
+', pos);
+        if (line_start == std::string::npos) line_start = 0;
+        std::string line_ctx = out.substr(line_start, pos - line_start + 50);
+
+        bool is_position = line_ctx.find("gl_Position") != std::string::npos
+                        || line_ctx.find("gl_FragDepth") != std::string::npos
+                        || line_ctx.find("mat") != std::string::npos
+                        || line_ctx.find("uniform") != std::string::npos;
+        if (!is_position) {
+            out.replace(pos, 6, "mediump");
+        } else {
+            pos += 6;
+        }
+    }
+    return out;
+}
+
+// OPT-3: Dead Code Elimination
+// Strip #if 0 ... #endif blocks yang tidak pernah compile
+inline std::string vinzz_dead_code_elim(const std::string& src) {
+    if (!global_settings.vinzz_dead_code_elim) return src;
+
+    std::string out;
+    out.reserve(src.size());
+    size_t pos = 0;
+    while (pos < src.size()) {
+        // Cari "#if 0" block
+        size_t if0 = src.find("#if 0", pos);
+        if (if0 == std::string::npos) {
+            out += src.substr(pos);
+            break;
+        }
+        // Copy konten sebelum #if 0
+        out += src.substr(pos, if0 - pos);
+        // Skip sampai matching #endif
+        int depth = 1;
+        size_t cur = if0 + 5;
+        while (cur < src.size() && depth > 0) {
+            size_t ifn  = src.find("#if", cur);
+            size_t endn = src.find("#endif", cur);
+            if (endn == std::string::npos) { cur = src.size(); break; }
+            if (ifn != std::string::npos && ifn < endn) {
+                depth++; cur = ifn + 3;
+            } else {
+                depth--; cur = endn + 6;
+            }
+        }
+        pos = cur;
+    }
+    return out;
+}
 static std::string vinzz_process_frag_shader(const std::string& src) {
     std::string out = src;
     out = vinzz_inject_early_frag(out);
@@ -127,6 +193,9 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, c
             bool _is_heavy = (essl_src.size() > 8000);
 
             if (!_is_compute && _lrz_shader_type == GL_FRAGMENT_SHADER) {
+                // OPT-2+3: Precision guard + dead code elim
+                essl_src = vinzz_precision_guard_apply(essl_src);
+                essl_src = vinzz_dead_code_elim(essl_src);
                 essl_src = vinzz_process_frag_shader(essl_src);
                 vinzz_lrz_note_frag(essl_src);
                 // Strip invariant/precise hanya untuk shader ringan-medium
@@ -138,6 +207,8 @@ void glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, c
                     essl_src = vinzz_strip_invariant(essl_src);
                 }
             } else if (!_is_compute && _lrz_shader_type == GL_VERTEX_SHADER) {
+                essl_src = vinzz_precision_guard_apply(essl_src);
+                essl_src = vinzz_dead_code_elim(essl_src);
                 essl_src = vinzz_process_vert_shader(essl_src);
                 if (!_is_heavy) {
                     essl_src = vinzz_inject_mediump_varyings(essl_src);

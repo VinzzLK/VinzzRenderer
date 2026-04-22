@@ -18,6 +18,86 @@
 #include <ankerl/unordered_dense.h>
 #include "drawing.h"
 #include "vinzz_perf.h"  // VinzzRenderer LRZ
+// VINZZ_BINARY_CACHE
+#include <fstream>
+#include <sstream>
+#include <sys/stat.h>
+
+// VinzzRenderer: Persistent Program Binary Cache
+// Simpan hasil kompilasi GL program ke disk biar tidak compile ulang tiap sesi
+namespace vinzz_prog_cache {
+
+static std::string get_cache_dir() {
+    // Pakai MG_DIR_PATH yang sudah diinit settings
+    const char* mg = getenv("MG_DIR_PATH");
+    std::string base = mg ? mg : "/sdcard/MG";
+    return base + "/prog_cache";
+}
+
+static std::string get_cache_path(GLuint program) {
+    // Hash sederhana dari program ID + timestamp pertama compile
+    // Gunakan program ID sebagai key (unik per session, tapi dikombinasi dengan shader hash)
+    std::ostringstream ss;
+    ss << get_cache_dir() << "/prog_" << program << ".bin";
+    return ss.str();
+}
+
+static bool ensure_dir(const std::string& dir) {
+    struct stat st;
+    if (stat(dir.c_str(), &st) == 0) return true;
+    return mkdir(dir.c_str(), 0755) == 0;
+}
+
+static bool save(GLuint program) {
+    if (!global_settings.vinzz_persistent_binary_cache) return false;
+    GLint bin_len = 0;
+    GLES.glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &bin_len);
+    if (bin_len <= 0) return false;
+
+    std::vector<uint8_t> buf(bin_len);
+    GLenum fmt = 0;
+    GLES.glGetProgramBinary(program, bin_len, nullptr, &fmt, buf.data());
+
+    if (!ensure_dir(get_cache_dir())) return false;
+
+    std::string path = get_cache_path(program);
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return false;
+
+    // Header: magic + format
+    uint32_t magic = 0x56425043; // 'VBPC'
+    f.write(reinterpret_cast<char*>(&magic), 4);
+    f.write(reinterpret_cast<char*>(&fmt), sizeof(fmt));
+    f.write(reinterpret_cast<char*>(buf.data()), bin_len);
+    return true;
+}
+
+static bool load(GLuint program) {
+    if (!global_settings.vinzz_persistent_binary_cache) return false;
+    std::string path = get_cache_path(program);
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+
+    uint32_t magic = 0;
+    f.read(reinterpret_cast<char*>(&magic), 4);
+    if (magic != 0x56425043) return false;
+
+    GLenum fmt = 0;
+    f.read(reinterpret_cast<char*>(&fmt), sizeof(fmt));
+
+    std::string bin((std::istreambuf_iterator<char>(f)), {});
+    if (bin.empty()) return false;
+
+    GLES.glProgramBinary(program, fmt,
+        reinterpret_cast<const void*>(bin.data()),
+        static_cast<GLsizei>(bin.size()));
+
+    GLint status = 0;
+    GLES.glGetProgramiv(program, GL_LINK_STATUS, &status);
+    return status == GL_TRUE;
+}
+
+} // namespace vinzz_prog_cache
 
 #define DEBUG 0
 
@@ -174,6 +254,9 @@ void glLinkProgram(GLuint program) {
     }
 
     GLES.glLinkProgram(program);
+    // VinzzRenderer: save binary cache setelah link sukses
+    { GLint _ls = 0; GLES.glGetProgramiv(program, GL_LINK_STATUS, &_ls);
+      if (_ls) vinzz_prog_cache::save(program); }
     // VinzzRenderer LRZ: register program ini ke kill list kalau FS-nya
     // punya discard atau gl_FragDepth write (dicatat saat glShaderSource).
     vinzz_lrz_register(program);

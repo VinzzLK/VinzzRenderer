@@ -640,5 +640,17 @@ inline void vinzz_apply_vulkan_jvm_hints() {
 // INIT
 // ============================================
 void vinzz_perf_init();
+// ===== OPT-4: Uniform Batching =====
+bool vinzz_uniform_should_skip_f(GLuint prog, GLint loc, float v);
+bool vinzz_uniform_should_skip_i(GLuint prog, GLint loc, int v);
+void vinzz_uniform_batch_flush();
+
+// ===== OPT-5: Texture Format Normalization =====
+void vinzz_tex_format_note(GLuint tex, GLenum internal_fmt);
+bool vinzz_tex_format_needs_swizzle(GLuint tex, GLenum sampler_fmt);
+
+// ===== OPT-7: Subgroup Hint =====
+void vinzz_subgroup_hint_apply();
+
 void vinzz_perf_frame_begin();
 void vinzz_perf_frame_end();

@@ -85,6 +85,15 @@ static void vinzz_init_defaults() {
     global_settings.vinzz_pipeline_cache   = true;
     global_settings.vinzz_shader_complexity_gate = true;
     global_settings.vinzz_compute_protect         = true;
+    // Shader Optimization Features
+    global_settings.vinzz_persistent_binary_cache = true;
+    global_settings.vinzz_precision_guard         = true;
+    global_settings.vinzz_dead_code_elim          = true;
+    global_settings.vinzz_uniform_batching        = true;
+    global_settings.vinzz_texture_norm            = true;
+    global_settings.vinzz_gmem_resolve_opt        = true;
+    global_settings.vinzz_subgroup_opt            = true;
+    global_settings.vinzz_subgroup_hint           = 64;
 }
 
 // MobileGlues - config/settings.cpp
@@ -321,6 +330,13 @@ void init_settings() {
         global_settings.vinzz_pipeline_cache   = config_get_int("vinzz_pipeline_cache") != 0;
         global_settings.vinzz_shader_complexity_gate = config_get_int("vinzz_shader_complexity_gate") != 0;
         global_settings.vinzz_compute_protect         = config_get_int("vinzz_compute_protect") != 0;
+        global_settings.vinzz_persistent_binary_cache = config_get_int("vinzz_persistent_binary_cache") != 0;
+        global_settings.vinzz_precision_guard         = config_get_int("vinzz_precision_guard") != 0;
+        global_settings.vinzz_dead_code_elim          = config_get_int("vinzz_dead_code_elim") != 0;
+        global_settings.vinzz_uniform_batching        = config_get_int("vinzz_uniform_batching") != 0;
+        global_settings.vinzz_texture_norm            = config_get_int("vinzz_texture_norm") != 0;
+        global_settings.vinzz_gmem_resolve_opt        = config_get_int("vinzz_gmem_resolve_opt") != 0;
+        global_settings.vinzz_subgroup_opt            = config_get_int("vinzz_subgroup_opt") != 0;
         int mip_bias_int = config_get_int("vinzz_mip_bias_x10");
         if (mip_bias_int >= -10 && mip_bias_int <= 10)
             global_settings.vinzz_mip_bias = mip_bias_int / 10.0f;

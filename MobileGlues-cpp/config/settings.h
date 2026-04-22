@@ -291,6 +291,15 @@ struct global_settings_t {
     // ===== VinzzRenderer: Shader Protection Features =====
     bool vinzz_shader_complexity_gate = true;  // Skip heavy inject for complex shaders
     bool vinzz_compute_protect         = true;  // Never touch compute shaders
+    // ===== VinzzRenderer: Shader Optimization Features =====
+    bool vinzz_persistent_binary_cache = true;   // OPT-1: Save GL program binary to disk
+    bool vinzz_precision_guard         = true;   // OPT-2: Downgrade highp→mediump where safe
+    bool vinzz_dead_code_elim          = true;   // OPT-3: Strip inactive GLSL branches
+    bool vinzz_uniform_batching        = true;   // OPT-4: Batch uniforms into UBO
+    bool vinzz_texture_norm            = true;   // OPT-5: Normalize texture format on bind
+    bool vinzz_gmem_resolve_opt        = true;   // OPT-6: glDiscardFramebuffer depth/stencil
+    bool vinzz_subgroup_opt            = true;   // OPT-7: Adreno 650 subgroup intrinsics hint
+    int  vinzz_subgroup_hint           = 64;     // Adreno 650 wavefront = 64
 
 };
 

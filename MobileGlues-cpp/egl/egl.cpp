@@ -240,6 +240,7 @@ extern "C"
     EGL_API EGLBoolean
 eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         vinzz_perf_frame_begin();        // VinzzRenderer: mulai frame
+        vinzz_uniform_batch_flush();      // OPT-4: reset uniform cache
         vinzz_cpu_preprep_flush();       // Feature 2: eksekusi draw queue
         LOG_D("eglSwapBuffers, dpy: %p, surface: %p", dpy, surface);
         LOAD_EGL(eglSwapBuffers)
