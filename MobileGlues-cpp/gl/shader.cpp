@@ -57,31 +57,27 @@ bool check_if_sampler_buffer_used(std::string str) {
 // VinzzRenderer: shader injection
 
 // OPT-2: Precision Promotion Guard
-// Downgrade highp → mediump untuk variable yang aman di Adreno 650
-// (koordinat texture, color output, fog — tidak butuh double precision)
+// Downgrade highp -> mediump untuk variable yang aman di Adreno 650
+// Adreno 650 tidak punya Float64 hardware, mediump sudah cukup untuk tex/color
 inline std::string vinzz_precision_guard_apply(const std::string& src) {
     if (!global_settings.vinzz_precision_guard) return src;
-
     std::string out = src;
-    // Safe to downgrade: texture coords, color outputs, varying interpolants
-    // Tidak downgrade: position, depth, matrix operations
-    // Strategi: ganti "highp" di output/varying/sampler declarations
     size_t pos = 0;
-    while ((pos = out.find("highp ", pos)) != std::string::npos) {
-        // Cek konteks: jangan downgrade gl_Position, depth, mat
-        size_t line_start = out.rfind('
-', pos);
+    const std::string token = "highp ";
+    while ((pos = out.find(token, pos)) != std::string::npos) {
+        // Cari awal baris untuk cek konteks
+        size_t line_start = out.rfind('\n', pos);
         if (line_start == std::string::npos) line_start = 0;
-        std::string line_ctx = out.substr(line_start, pos - line_start + 50);
-
-        bool is_position = line_ctx.find("gl_Position") != std::string::npos
-                        || line_ctx.find("gl_FragDepth") != std::string::npos
-                        || line_ctx.find("mat") != std::string::npos
-                        || line_ctx.find("uniform") != std::string::npos;
-        if (!is_position) {
-            out.replace(pos, 6, "mediump");
+        std::string ctx = out.substr(line_start, pos - line_start + 60);
+        bool unsafe = ctx.find("gl_Position")   != std::string::npos
+                   || ctx.find("gl_FragDepth")  != std::string::npos
+                   || ctx.find("gl_FragCoord")  != std::string::npos
+                   || ctx.find("mat")           != std::string::npos
+                   || ctx.find("uniform")       != std::string::npos;
+        if (!unsafe) {
+            out.replace(pos, token.size(), "mediump ");
         } else {
-            pos += 6;
+            pos += token.size();
         }
     }
     return out;

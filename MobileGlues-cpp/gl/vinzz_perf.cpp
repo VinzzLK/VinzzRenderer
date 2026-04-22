@@ -1,3 +1,4 @@
+#include <android/log.h>
 // VinzzRenderer - vinzz_perf.cpp
 #include "vinzz_perf.h"
 #include "vinzz_newfeatures.h"
@@ -200,6 +201,6 @@ void vinzz_subgroup_hint_apply() {
     const int subgroup_size = global_settings.vinzz_subgroup_hint;
     if (subgroup_size > 0) {
         // Log hint untuk verification
-        LOG_D("[VinzzRenderer] Subgroup hint: %d (Adreno 650 optimal)", subgroup_size)
+        __android_log_print(ANDROID_LOG_DEBUG, "VinzzRenderer", "[VinzzRenderer] Subgroup hint: %d (Adreno 650 optimal)", subgroup_size);
     }
 }
